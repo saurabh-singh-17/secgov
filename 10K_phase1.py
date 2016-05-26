@@ -17,8 +17,8 @@ import math
 import shutil
 import urllib2
 
-folderPath="C:\project10k"
-writeBasePath="C:\project10k"
+folderPath="C:\\Users\\u472290\\workfolder\\Project 10_k\\previous_forms"
+writeBasePath="C:\\Users\\u472290\\workfolder\\Project 10_k\\previous_forms"
 collatedFormsPath=os.path.join(folderPath,"collatedForms")
 tempFolderPath=os.path.join(folderPath,"temp")
 parsedXbrlFilesPath=os.path.join(folderPath,"parsedInfo")
@@ -125,7 +125,7 @@ for ind,zips in enumerate(pathOfZips):
     data=pd.read_csv(os.path.join(writeBasePath,".".join((nameOfFiles[ind].split(".")[0],"csv"))),sep="|")
     data["xbrlFilePath"]=data.Filename.apply(lambda x:"".join(("ftp://ftp.sec.gov/",x.replace("-","").replace(".txt",""),"/",x.split("/")[x.split("/").__len__()-1].replace(".txt","-xbrl.zip"))))
     del data["Filename"]
-    data.to_csv(os.path.join(writeBasePath,".".join((nameOfFiles[ind].split(".")[0],"csv"))),sep="|")
+    data.to_csv(os.path.join(writeBasePath,".".join((nameOfFiles[ind].split(".")[0],"csv"))),sep="|",index=False)
     tempDownloadPath=os.path.join(tempFolderPath,"xbrl.zip")
     xbrlFinal=pd.DataFrame()
     for inds,paths in enumerate(data.xbrlFilePath):
