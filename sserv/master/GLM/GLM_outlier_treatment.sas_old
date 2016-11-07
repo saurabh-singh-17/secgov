@@ -1,0 +1,67 @@
+/*Successfully converted to SAS Server Format*/
+*processbody;
+%let completedTXTPath =  &output_path/GLM_MODELING_OUTLIER_TREATMENT_COMPLETED.txt;
+options mprint mlogic symbolgen mfile ;
+
+/**/
+/*%sysexec del "&output_path./GLM_MODELING_OUTLIER_TREATMENT_COMPLETED.txt";*/
+/**/
+proc printto log="&output_path./GLM_ModelingOutlierTreatment_Log.log";
+run;
+quit;
+/*proc printto print="&output_path./GLM_ModelingOutlierTreatment.out";*/
+
+
+libname main "&input_path.";
+libname in "&inter_output_path.";
+libname out "&output_path.";
+
+
+/*flag the specified variable depending on cut-off value*/
+data out.outdata;
+	retain &flag_name.;
+	set in.outdata;
+
+	if &flag_var. < %sysevalf(&cutoff_val.) then &flag_name. = 0;
+		else if &flag_var. >=  %sysevalf(&cutoff_val.) then &flag_name. = 1;
+
+	run;
+
+
+/*sort for merging*/
+proc sort data = out.outdata out = out.outdata;
+	by &dependent_var. &independent_var.;
+	run;
+
+proc sort data = main.dataworking out = main.dataworking;
+	by &dependent_var. &independent_var.;
+	run;
+
+
+/*merge-back the subsetted dataset with the main dataset*/
+data main.dataworking;
+	merge out.outdata(in=a keep = &flag_name. &dependent_var. &independent_var.) main.dataworking(in=b);
+	by &dependent_var. &independent_var.;
+	if a or b;
+	run;
+
+/*de-sort the main dataset*/
+proc sort data = main.dataworking;
+	by primary_key_1644;
+	run;
+
+
+
+/* flex uses this file to test if the code has finished running */
+data _null_;
+	v1= "GLM_MODELING_OUTLIER_TREATMENT_COMPLETED";
+	file "&output_path/GLM_MODELING_OUTLIER_TREATMENT_COMPLETED.txt";
+	put v1;
+	run;
+
+
+/*ENDSAS;*/
+
+
+
+

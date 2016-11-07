@@ -1,0 +1,18 @@
+/*--------------------------------Parameters Required---------------------------------------*/
+/*%let input_path='';                                  (input path where sas dataset is present)*/
+/*%let dataset_name='';                                (name of the dataset)*/
+/*%let output_path='';                                 (the output path of the csv)*/
+/*------------------------------------------------------------------------------------------*/
+
+libname in "&input_path.";
+
+PROC EXPORT DATA=in.&dataset_name.
+	OUTFILE="&output_path\&dataset_name..csv"
+	dbms=CSV replace;
+	run;
+
+data _null_;
+	v1= "dataset refresh completed";
+	file "&output_path.\dataset_refresh_completed.txt";
+	put v1;
+	run;
