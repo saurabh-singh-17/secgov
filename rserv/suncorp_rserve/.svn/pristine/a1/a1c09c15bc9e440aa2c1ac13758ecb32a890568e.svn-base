@@ -1,0 +1,538 @@
+#------------------------------------------------------------------------------------------------------#
+#--                                                                                                  --#
+#-- Project Name :  MRx_Time_Series                                                                  --#
+#-- Description  :  Contains some functions to enable VisualizationAdvanced in MRx                   --#
+#-- Return type  :  Creates CSV's at a location according to given inputs                            --#
+#-- Author       :  Subarna Rana/Vasanth                                                                        --#
+#-- Last Edited  :  By Vasanth M M on 19feb2013 1107                                                 --#
+#-- Known Issues :  1. The type for decomposition (add/mult) has to be determined everytime          --#
+#--                    The type is hardcoded now as 'multiplicative'                                 --#
+#--                 2. The format of the date has to be specified to be read properly                --#
+#--                    Now the format of date is hardcoded as "mm/dd/yyyy".                          --#
+#--                    It will fail in other cases                                                   --#
+#--                 3. For order of seasonality, we are getting diferent results in SAS & R          --#
+#--                 4. For converting the required variables into a timeseries object, the frequency --#
+#--                    is hardcoded as 7.(For seasonally adjusting)                                  --#
+#------------------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------
+# Parameters required
+#------------------------------------------------------------------------------
+# input_path="D:/timeseries/"
+# output_path="D:/timeseries/output/"
+# var_list="sales"
+# date_var="Date"
+# flag_timeSeries_plot="true"
+# flag_decomp_plot="true"
+# flag_acf_plot="true"
+# flag_pacf_plot="true"
+# flag_unit_test="true"
+# flag_whiteNoise_test="true"
+# flag_log_transform="false"
+# flag_seasonal_adj="false"
+# flag_seasonal_index="false"
+# flag_differencing="false"
+# flag_seasonality="false"
+# order_differencing="2"
+# order_seasonality="3"
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Reading the dataset
+#------------------------------------------------------------------------------
+# dataworking <- read.csv(paste(input_path,"/dataworking.csv",sep=""),header=T)
+load(paste(input_path,"/dataworking.RData",sep=""))
+dataworking <- subset(x=dataworking,select=c(var_list,date_var))
+varCol      <- which(colnames(dataworking) %in% var_list)
+dateCol     <- which(colnames(dataworking) %in% date_var)
+
+# ===================================================
+#   Check for missing values in chosen Date variable
+# ===================================================
+
+if(any(dataworking[,date_var] %in% (""))){
+  write("Date variable contains missing values",paste(output_path,"/missing_date.txt",sep=""))
+  stop()
+}
+
+#-----------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Error check
+#------------------------------------------------------------------------------
+  #------------------------------------------------------------------------------
+  # Delete these error TXTs if they already exist
+  #------------------------------------------------------------------------------
+  deleteThese <- c(paste(output_path,"/error.txt",sep=""),paste(output_path,"/zero.txt",sep=""),paste(output_path,"/negative.txt",sep=""),paste(output_path,"/
+                                                                                                                                                .txt",sep=""))
+  unlink(deleteThese,force=T)
+  #------------------------------------------------------------------------------
+
+shouldIStop <- F
+errorMsg <- NULL
+
+if(any(is.na(dataworking[,varCol])) & 
+     (as.logical(flag_log_transform) | 
+        as.logical(flag_seasonal_adj) | 
+        as.logical(flag_seasonal_index) |
+        as.logical(flag_differencing) |
+        as.logical(flag_seasonality))){
+  shouldIStop <- T
+  write("variable contains missing",paste(output_path,"/missing.txt",sep=""))
+  text <- paste("The variable",colnames(dataworking)[varCol],"contains missing values. Please deselect it.")
+  errorMsg <- c(errorMsg,text)
+}
+
+if(shouldIStop) stop(paste(errorMsg,collapse=" "))
+
+if(length(unique(dataworking[,varCol]))==1){
+  shouldIStop <- T
+  text <- paste("The variable",colnames(dataworking)[varCol],"contains only 1 unique value. Please deselect it.")
+  write(text,paste(output_path,"/error.txt",sep=""))
+  errorMsg <- c(errorMsg,text)
+}
+
+if(shouldIStop) stop(paste(errorMsg,collapse=" "))
+
+if(any(dataworking[,varCol]==0) & as.logical(flag_log_transform)){
+  shouldIStop <- T
+  write("variable contains zero",paste(output_path,"/zero.txt",sep=""))
+  text <- paste("The variable",colnames(dataworking)[varCol],"contains 0. Log will give -Inf. Please deselect it.")
+  errorMsg <- c(errorMsg,text)
+}
+
+if(shouldIStop) stop(paste(errorMsg,collapse=" "))
+
+if(any(dataworking[,varCol]<0) & as.logical(flag_log_transform)){
+  shouldIStop <- T
+  write("variable contains negative",paste(output_path,"/negative.txt",sep=""))
+  text <- paste("The variable",colnames(dataworking)[varCol],"contains negative values. Log wont work. Please deselect it.")
+  errorMsg <- c(errorMsg,text)
+}
+
+if(shouldIStop) stop(paste(errorMsg,collapse=" "))
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Libraries required
+#------------------------------------------------------------------------------
+library(tseries)
+library(moments)
+library(colorspace) #version 1.2.1 needed by forecast 4.01
+library(stabledist)
+library(fracdiff)
+library(forecast)   #version 4.01
+library(fUnitRoots) #version 2160.77
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Always generate all plots
+#------------------------------------------------------------------------------
+flag_timeSeries_plot="true"
+flag_decomp_plot="true"
+flag_acf_plot="true"
+flag_pacf_plot="true"
+flag_unit_test="true"
+flag_whiteNoise_test="true"
+#------------------------------------------------------------------------------
+
+roundoff <- function(object){
+  object = signif(as.numeric(object), digits = 4)
+  return (object)
+}
+
+
+#------------------------------------------------------------------------------
+# writing a function to recognise  a date format
+#------------------------------------------------------------------------------
+dateformat<-function(date){
+  form<-NULL
+  temp<-as.character(date[1])
+  if(any(grepl("[[:alpha:]]",date) == "TRUE"))
+  {
+    return("unknown")
+  }
+  if(grepl(" ",temp)){
+    date<-apply(as.data.frame(date),1,function(x){strsplit(as.character(x)," ")[[1]][1]})
+  }
+  date<-as.character(date)
+  if (is.null(date))
+    return("unknown")  
+  if(is.na(mean(as.numeric(date),na.rm=T)) == "FALSE")
+  {
+    return("unknown")
+  }
+  if((length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == FALSE)))   &
+       (length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == FALSE))))
+    return("unknown")
+  if (all(is.na(date))) 
+    return(NA)
+  val<-length(date)
+  if(val > 100){val= 100}
+  date[which(date=='')] <- NA
+  if(!is.na(as.numeric(substr(date[1],1,4)))){
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],5,5)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[3,]))),na.rm=T)
+    if(max1 > 12 & max2 <= 12){form<-paste("%Y",split,"%d",split,"%m",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+  }else{
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],6-(10-nchar(date[1])),6-(10-nchar(date[1])))
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+  }
+  if(max(nchar(date)) <= 8)
+  {
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],nchar(date[1])-2,nchar(date[1])-2)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+  }
+  if(nchar(temp[1]) > 10 & nchar(temp[1]) <= 16){form<- paste(form," %H:%M",sep="")}
+  if(nchar(temp[1]) > 16){form<- paste(form," %H:%M:%S",sep="")}
+  return(form)
+}
+#------------------------------------------------------------------------------
+
+
+
+#===========================Function Header=============================
+# Process Name  : standardError
+# Description   : Calculates the standardError for ACF and PACF
+# Return type   : Standard Error
+# Author        : Arun Pillai
+# Version       : Version1
+#=======================================================================
+standardError=function(x,n)
+{ result=0
+  len=length(x)
+  if(len<=1)
+  {
+    return(0)
+  }
+  for( i in 2:len)
+  {
+    temp = x[1:i]
+    tempSqr=sqrt((sum(temp*temp) * 2 + 1)/n)
+    result=c(result,tempSqr)
+  }
+  return(result)
+}
+#=======================================================================
+
+
+
+#-- #~!@#30Jan2013,1025#
+#------------------------------------------------------------------------------
+# Sorting the dataset based on the date
+# The date will be in the format yyyy-mm-dd
+#------------------------------------------------------------------------------
+date        <- dataworking[,dateCol]
+form        <- dateformat(date)
+date        <- as.Date(as.character(date),format=form)
+dataworking <- dataworking[order(date),]
+date        <- sort(date)
+#------------------------------------------------------------------------------
+#-- #~!@#30Jan2013,1025#
+
+
+
+#-- #~!@#06Feb2013,1214#
+#------------------------------------------------------------------------------
+# Log transformation
+#------------------------------------------------------------------------------
+if(as.logical(flag_log_transform)){
+  dataworking[,varCol] <- log(dataworking[,varCol])
+  newvar <- rep('newVar',nrow(dataworking))
+}
+#------------------------------------------------------------------------------
+#-- #~!@#06Feb2013,1214#
+
+
+
+#-- #~!@#15feb2013,1134#
+#------------------------------------------------------------------------------
+if(as.logical(flag_seasonal_adj)){
+  temp=ts(dataworking[,varCol],freq=7)
+  temp=decompose(temp,type='multiplicative',filter=NULL)
+  dataworking[,varCol]=seasadj(temp)
+  newvar <- rep('newVar',nrow(dataworking))
+}
+#------------------------------------------------------------------------------
+#-- #~!@#15feb2013,1134#
+
+
+
+#-- #~!@#29Jan2013,1703#
+#------------------------------------------------------------------------------
+#-- Requirement : The dataset should be ordered based on the date_var
+#-- Then, the columns in var_list will be differenced
+#-- This will replace columns(var_list) in dataworking with the differenced columns
+#-- We are not writing dataworking.csv. So, the dataset in the backend wont be affected
+#------------------------------------------------------------------------------
+if(as.logical(flag_differencing)){
+  lag=1
+  if(as.logical(flag_seasonality)){
+    lag=as.numeric(order_seasonality)
+  }
+  temp <- diff(dataworking[,varCol],lag=lag,difference=as.numeric(order_differencing))
+  b4temp <- rep(0,(lag*as.numeric(order_differencing)))
+  dataworking[,varCol] <- c(b4temp,temp)
+  newvar <- rep('newVar',nrow(dataworking))
+}
+#------------------------------------------------------------------------------
+#-- #~!@#29Jan2013,1703#
+
+
+
+#------------------------------------------------------------------------------
+# Time Series Plot
+# Creating timeseries.csv
+#------------------------------------------------------------------------------
+if(as.logical(flag_timeSeries_plot)){
+  date           <- dataworking[,dateCol]
+  form           <- dateformat(date)
+  dt             <- format(date,format=form)
+  temp           <- cbind.data.frame(dt,dataworking[,varCol])
+  colnames(temp) <- c("Date",var_list)
+
+  if(flag_log_transform  =='false' &
+  flag_seasonal_adj == 'false' &
+  order_differencing == '0' &
+  order_seasonality == '0'){}else{colnames(temp)[2]<-var_list} 
+  
+#########################   CREATING PNG GRAPH FOR TIME SERIES -start
+  if(nrow(temp)>5500){
+    
+    png(filename=paste(output_path,"timeseries.png",sep="/"))
+    plot(x=temp[,"Date"],y=temp[,var_list],xlab="Date",ylab=var_list,type="n",col="#800000")
+    lines(x=temp[,"Date"],y=temp[,var_list],xlab="Date",ylab=var_list,type="l",col="#800000")
+    dev.off()
+  }
+#########################   CREATING PNG GRAPH FOR TIME SERIES -stop
+  # writing the output as a CSV
+  write.csv(temp,paste(output_path,"/timeseries.csv",sep=""),row.names = FALSE, quote = FALSE)
+}
+#------------------------------------------------------------------------------
+
+
+
+#-- #~!@#30Jan2013,1025#
+#------------------------------------------------------------------------------
+# Time Series Decomposition Plot
+# Creating decomp.csv
+#------------------------------------------------------------------------------
+if(as.logical(flag_decomp_plot)){
+  date   <- dataworking[,dateCol]
+  season <- as.numeric(format(date,format="%w"))+1
+    # For this decompose to work properly, the dates should be ordered and continuous
+    # The output:
+    #-- Time Series:
+    #-- Start = c(1, 1)
+    #-- End = c(75, 6)
+    #-- Frequency = 7
+    # The above output is for 524 observations and freq=7 in ts
+    # Which means the first 7 observations will be considered to be in week1
+    # The next 7 to be in week 2 and so on
+    # If there is some date missing in between (like 01-01-2008 is in row 5 and 13-01-2008 is in row 6)
+    # This line of code will still work but the results will not be correct (because 01-01-2008 and 13-01-2008 are both considered to be in the same week)
+    # So, every date should have atleast one observation, to get meaningful results
+    data=ts(na.omit(dataworking[varCol]),freq=7)
+  index <- which(is.na(dataworking[varCol]))
+  if (length(index)!= 0){
+    dataworking <- dataworking[-index,]
+  }
+    # decomp=decompose(data,type=type,filter=NULL)
+    decomp=decompose(data,type='multiplicative',filter=NULL)
+  if(!exists("newvar")){
+    newvar <- rep(var_list,nrow(dataworking))
+  }
+  # if(type=='additive') mode <- rep('ADD',nrow(dataworking))
+  # if(type=='multiplicative') mode <- rep('MULT',nrow(dataworking))
+  mode <- rep('MULT',nrow(dataworking))
+  time <- format(date,format='%d%b%Y')
+#   output=cbind.data.frame(newvar,mode,time,season,dataworking[,var_list],decomp$trend,decomp$random,decomp$seasonal,seasadj(decomp))
+#   colnames(output)=c("_NAME_","_MODE_","TIME","_SEASON_","ORIGINAL","Trend","Random","SC","Seasonally_Adjust")
+  output=cbind.data.frame(decomp$trend,decomp$random,decomp$seasonal)
+  colnames(output)=c("Trend","Random","Seasonality")
+  #------------------------------------------------------------------------------
+  # Save the newly created time series column as an R object
+  #------------------------------------------------------------------------------
+  timeSeriesVar <- as.data.frame(dataworking[,varCol])
+  names(timeSeriesVar) <- var_list
+  if(as.logical(flag_seasonal_index)){
+    timeSeriesVar <- cbind.data.frame(timeSeriesVar,round(x=output$Seasonality,digits=13))
+    names(timeSeriesVar)[2]<-paste(var_list,"Seasonality",sep="_")
+  }
+  save(list=c("timeSeriesVar","newvar"),file=paste(output_path,'timeSeriesVar',sep="/"))
+decomp_output <- as.data.frame(output)
+decomp_output[,date_var]  <- dataworking[,dateCol]
+decomp_output <- decomp_output[,c(4,1,2,3)]
+names(decomp_output)[1] <- paste("Date")
+
+#########################   CREATING PNG GRAPH FOR DECOMP -start
+
+if(nrow(decomp_output)>5500){
+#   par(mfrow=c(3,1))
+  
+
+  png(filename=paste(output_path,"DecompositionPlots.png",sep="/"))
+  plot(decomp)
+  dev.off()
+  
+  
+#   png(filename=paste(output_path,"trend.png",sep="/"))
+#   plot(x=decomp_output[,"Date"],y=decomp_output[,"Trend"],xlab="Date",ylab="Trend",type="n",col="#800000")
+#   lines(x=decomp_output[,"Date"],y=decomp_output[,"Trend"],xlab="Date",ylab="Trend",type="l",col="#800000")
+#   png(filename=paste(output_path,"random.png",sep="/"))
+#   plot(x=decomp_output[,"Date"],y=decomp_output[,"Random"],xlab="Date",ylab="Random",type="n",col="#800000")
+#   lines(x=decomp_output[,"Date"],y=decomp_output[,"Random"],xlab="Date",ylab="Random",type="l",col="#800000")
+#   png(filename=paste(output_path,"seasonality.png",sep="/"))
+#   plot(x=decomp_output[,"Date"],y=decomp_output[,"Seasonality"],xlab="Date",ylab="Seasonality",type="n",col="#800000")
+#   lines(x=decomp_output[,"Date"],y=decomp_output[,"Seasonality"],xlab="Date",ylab="Seasonality",type="l",col="#800000")
+#  
+#   dev.off()
+  
+  
+}
+#########################   CREATING PNG GRAPH FOR TIME SERIES -stop
+
+#------------------------------------------------------------------------------
+  # writing decomp.csv
+  write.csv(decomp_output,paste(output_path,"/decomp.csv",sep=""),row.names = FALSE, quote = FALSE)
+}
+#------------------------------------------------------------------------------
+#-- #~!@#30Jan2013,1025#
+
+
+
+#------------------------------------------------------------------------------
+# Calculating Auto Correlation
+#------------------------------------------------------------------------------
+if(as.logical(flag_acf_plot)){
+  acfOutput=acf(as.numeric(dataworking[,varCol]),lag.max = 24,type = "correlation",plot = F,na.action=na.exclude)
+  output=as.numeric(acfOutput$lag)
+  stdErr=standardError(as.numeric(acfOutput$acf),acfOutput$n.used)
+  output=cbind("",output,as.numeric(acfOutput$acf),stdErr,(stdErr*2),-(stdErr*2))
+  colnames(output)=c("_NAME_","Lag","Correlation","StdErr","StdErrX2","Neg_StdErrX2")
+  output <- as.data.frame(output)
+  output[,"_NAME_"] <- NULL 
+  # Writing the result at the output location
+  write.csv(output,paste(output_path,"/AutoCorrelation_Plot_Sample.csv",sep=""),row.names = FALSE, quote = FALSE)
+}
+#------------------------------------------------------------------------------
+
+
+
+#-- #~!@#29Jan2013,1402#
+#------------------------------------------------------------------------------
+# Calculating Partial Auto Correlation
+#------------------------------------------------------------------------------
+if(as.logical(flag_pacf_plot)){
+  pacfOutput=pacf(as.numeric(dataworking[,varCol]),lag.max = 24,type = "correlation",plot = F,na.action=na.exclude)
+  output=as.numeric(pacfOutput$lag)
+  stdErr=1/(sqrt(nrow(dataworking)))
+  output=cbind("",output,as.numeric(pacfOutput$acf),stdErr,(stdErr*2),-(stdErr*2))
+  colnames(output)=c("_NAME_","Lag","Correlation","StdErr","StdErrX2","Neg_StdErrX2")
+  output <- as.data.frame(output)
+  output[,"_NAME_"] <- NULL
+  # Writing the result at the output location
+  write.csv(output,paste(output_path,"/_Partial_ACF_Sample.csv",sep=""),row.names = FALSE, quote = FALSE)
+}
+#------------------------------------------------------------------------------
+#-- #~!@#29Jan2013,1402#
+
+
+if(as.logical(flag_unit_test))
+{
+  library(CADFtest)
+  for(adflags in 0:5) 
+  {
+    tempadf = CADFtest(as.numeric(dataworking[,varCol]),max.lag.y=adflags, type = "drift")
+    rhoVals = as.numeric(tempadf$statistic) 
+    pval = as.numeric(tempadf$p.value)
+    tempVal = cbind("","Single Mean",adflags,rhoVals,pval,"0.05")
+    if(adflags == 0)
+    {
+      adf = tempVal
+    }else
+    {
+      adf = rbind(adf,tempVal)
+    }
+  }
+  colnames(adf) = c("_NAME_","Type","Lags","Tau","ProbTau","Significance_level")
+  adf = as.data.frame(adf)
+  adf$ProbTau = round(as.numeric(paste(adf$ProbTau)), digits = 10)
+  adf[,"_NAME_"] <- NULL
+  write.csv(adf,paste(output_path,"UnitRootTests.csv",sep="/"),quote=F, row.names = F)
+}
+
+
+
+#------------------------------------------------------------------------------
+# Performing white noise test
+#------------------------------------------------------------------------------
+if(as.logical(flag_whiteNoise_test)){
+  toLag     <- NULL
+  chiSqVal  <- NULL
+  pVal      <- NULL
+  for(boxlags in 1:24)
+  {
+    tempBox   <- Box.test(as.numeric(dataworking[,varCol]),lag=(boxlags))
+    toLag     <- as.numeric(tempBox$parameter)
+    pVal      <- as.numeric(tempBox$p.value)
+    sig = "0.05"
+    tempbox = cbind("",toLag,pVal,"0.05")
+    if(boxlags == 1)
+    {
+      box = tempbox
+    }else
+    {
+      box = rbind(box,tempbox)
+    }
+  }
+  colnames(box)=c("_NAMES_","ToLags","ProbChiSq","Significance_level") 
+  box = as.data.frame(box)
+  box$ProbChiSq = round(as.numeric(paste(box$ProbChiSq)), digits = 10)
+  box[,"_NAMES_"] <- NULL
+  # writing the result at the output location
+  write.csv(box,paste(output_path,"/WhiteNoiseTest.csv",sep=""),row.names = FALSE, quote = FALSE)
+}
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+#Writing number of observations.txt
+#------------------------------------------------------------------------------
+nrow<-nrow(dataworking)
+write(nrow,paste(output_path,"/nobs.txt",sep=""))
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Writing completed.txt
+#------------------------------------------------------------------------------
+write("MODELING - TIMESERIES_ADVANCED_COMPLETED",paste(output_path,"/TIMESERIES_ADVANCED_COMPLETED.txt",sep=""))
+#------------------------------------------------------------------------------
+
+  

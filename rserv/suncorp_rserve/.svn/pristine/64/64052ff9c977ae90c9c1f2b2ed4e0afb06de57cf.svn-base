@@ -1,0 +1,139 @@
+#Written by : Tushar Gupta
+#Time       : July 2014
+#Purpose    : Categorical missing treatmemt code for across Dataset option 
+
+#===================================================================================== 
+#                                   Sample Parameters 
+#===================================================================================== 
+#input_path        <- 
+#output_path       <-
+#treatment_type    <-'mode'
+#var_list          <- c('tran_month','Cnt_Return','li_PAME') 
+#custom_val        <- '3'
+#rep_var           <-c('ACV','ACV')
+#treatment_prefix  <- 'new'
+#===================================================================================== 
+# for removing the error.txt formed in case there are no missing values
+#===================================================================================== 
+#file.remove(paste(output_path,"/error.txt",sep=""))
+#=====================================================================================
+
+
+#===================================================================================== 
+# Loading the data from input path and initializing the data frame in which
+# values for different variables are appended
+#===================================================================================== 
+#data            <- read.csv("D:/datasets/CSV DATASETS/Cluster_EDA.csv",
+#                           stringsAsFactor=F) 
+
+
+load(paste(input_path,"/dataworking.RData",sep=""))
+# data <- dataworking
+togivefinal     <- data.frame()
+#===================================================================================== 
+#===================================================================================== 
+# defining mode function as pre defined function does not exist in R
+#===================================================================================== 
+Mode_def            <- function(x) {
+  ux                <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+#=====================================================================================
+#For converting factors to character 
+#===================================================================================== 
+for (i in 1:length(var_list)){
+  if (class(dataworking[,var_list[i]]) == "factor"){
+    dataworking[,var_list[i]]   <- as.character(dataworking[,var_list[i]])
+  }
+}
+#===================================================================================== 
+#   looping for number of variables
+#===================================================================================== 
+for (i in 1: length(var_list)){
+  
+  #==========================================================================   
+  # Checking for class: if numeric then finding NAs in the variable
+  #==========================================================================   
+#   if (class(dataworking[,var_list[i]]) != "character"){
+    index <- c(which(is.na(dataworking[,var_list[i]])),which(dataworking[,var_list[i]]==""))
+#     index                     <- which(is.na(dataworking[,var_list[i]]))
+#     length                    <- length(index)
+#     
+#   }
+#   #==========================================================================
+#   #   If the class is character then finding only blank values
+#   #==========================================================================   
+#   if (class(dataworking[,var_list[i]]) == "character"){
+#     index                     <- which(dataworking[,var_list[i]] == "")
+#     length                    <- length(index)
+    
+#   }
+  #==========================================================================
+  # Calculating basic statistics for the csv
+  # For finding the mode Nas or blank are ignored depending 
+  # on type of the variable   
+  #==========================================================================
+  if (length(index) != 0){
+    pre_mode                  <- Mode_def(dataworking[-index,var_list[i]])
+    treatment_type            <-treatment_type
+    no_of_rows_affected       <- length(index)
+    percent_of_rows_affected  <- no_of_rows_affected/nrow(dataworking)*100
+    
+    #=============================================================
+    # Treating the variables
+    #==============================================================
+    
+    if (treatment_type == "mode"){
+      dataworking[,paste(treatment_prefix,'_',var_list[i],sep="")]      <- dataworking[,var_list[i]]
+      dataworking[index,paste(treatment_prefix,'_',var_list[i],sep="")] <- Mode_def(dataworking[-index,var_list[i]])
+      treatment_value                             <- pre_mode
+      
+    }
+    
+    if ((treatment_type) =="custom_type"){
+      dataworking[,paste(treatment_prefix,'_',var_list[i],sep="")]      <- dataworking[,var_list[i]]
+      dataworking[index,paste(treatment_prefix,'_',var_list[i],sep="")] <- custom_val
+      treatment_value                             <- custom_val
+      
+    }
+    if (treatment_type == "delete"){
+      dataworking<- dataworking[-index,]
+      treatment_value <-'delete'
+    }
+    
+    if (treatment_type == "replace_with_existing"){
+      dataworking[,paste(treatment_prefix,'_',var_list[i],sep="")]      <- dataworking[,var_list[i]]
+      dataworking[index,paste(treatment_prefix,'_',var_list[i],sep="")] <- dataworking[index,missing_replacement_var[i]]
+      treatment_value                             <- 'replace_with_existing'
+    }
+    
+    #=================================================================   
+    # After the treatment calculating the post-statistics and binding 
+    #=================================================================   
+    if (treatment_type == "delete"){
+      post_mode <- pre_mode
+    }else{
+    post_mode    <-Mode_def(dataworking[,paste(treatment_prefix,'_',var_list[i],sep="")])
+    }
+    variable     <- var_list[i]
+    togive       <- cbind(variable,pre_mode,post_mode,treatment_value,treatment_type,
+                          no_of_rows_affected,percent_of_rows_affected)
+    togivefinal <-rbind(togive,togivefinal)
+    
+  }else{
+    write(paste("There are no missing values in"," ",var_list[i],sep=""),
+          file=paste(output_path,"/error.txt",sep=""),append=T)
+  }
+}
+#==================================================================== 
+# updating the main dataset 
+#====================================================================
+
+# writing the csv 
+
+write.csv(togivefinal,file=paste(output_path,"/categorical_treatment.csv",sep="")
+          ,row.names=F, quote=F)
+
+
+save(dataworking,file=paste(input_path,"/dataworking.RData",sep=""))
+write("completed",paste(output_path,"/CATEGORICAL_TREATMENT_COMPLETED.txt",sep=""))

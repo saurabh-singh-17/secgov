@@ -1,0 +1,537 @@
+#------------------------------------------------------------------------------------------------------#
+#--                                                                                                  --#   
+#-- Project Name :  MRx_DQA_1.0                                                                      --#
+#-- Description  :  Contains some functions to enable correlation in MRx                                --#
+#-- Return type  :  Generates csvs at given location                                                 --#
+#-- Author       :  Saurabh Singh                                                                    --#                 
+#------------------------------------------------------------------------------------------------------
+
+#Parameters required
+#-----------------------------------------------------------------
+#input_data <- 'D:/dataworking.csv'
+#output_path <- 'C:/MRx/r/RTesting-8-Oct-2012-17-02-16/1/summary/2'
+#dataset_name <- 'dataworking'
+#continuous_varlist <- c('ACV','black_hispanic','channel_1','channel_2','channel_3','channel_4','channel_5','Chiller_flag','cluster_flag','format','HHs_55_64','HHs_Index_Income_75K_9999K','Hispanic_HHs_Index','P164_Demand_Index','P26_Demand_Index','sales','sf1','sf2','sf3','Total_Selling_Area')
+#categorical_varlist <- c('geography','Store_Format')
+#measures_of_location <- c('Median','Mode','Midmean','TrimmedMean')
+#normality <- c('Skewness','Kurtosis','Shapiro-Wilk','Kolmogorov-Smirnov','Cramer-Von-Mises','Anderson-Darling')
+#measures_of_dispersion <- c('Standard Deviation','Range','InterQuartile Range')
+#iteration <- '2'
+#Distributions <- 'false'
+#percentile <- 'true'
+#corrlation_chk <- 'true'
+#flag_contents <- 'true'
+#flag_filter <- 'false'
+#grp_vars <- c('Store_Format','geography')
+#filterCode_path <- 'C:/MRx/Mu Sigma/com/musigma/reusablemodules/sas/application_setup'
+#filter_drop <- 'false'
+#percentile_value <- '0 to 100 by 1'
+
+
+
+#Libraries required
+#-----------------------------------------------------------------
+library(moments)
+#library(e1071)
+library(psych)
+library(CvM2SL2Test)
+library(reshape)
+library(adk)
+library(nortest)
+library(stats)
+
+
+
+#Reading the dataworking.csv  
+#-----------------------------------------------------------------
+# dataworking=read.csv(input_data,header=T)
+load(paste(input_data,"/dataworking.RData",sep=""))
+
+categorical_varlist<-gsub(' ','.',categorical_varlist)
+continuous_varlist<-gsub(' ','.',continuous_varlist)
+normality<-gsub("-","_",normality)
+
+if(is.null(grp_vars)){grp_vars=''}
+#Function to perform Data Quality Analysis
+#-----------------------------------------------------------------
+
+univariateSummary=function(continuous_varlist,grp_vars){
+  
+  grp_vars_1<- paste(grp_vars,"_",sep="")
+  cont_var_index=which(colnames(dataworking)%in%continuous_varlist)
+  if(grp_vars != '')
+  {
+    group_var_cat_index=which(colnames(dataworking)%in%grp_vars)
+  }
+  if(grp_vars == '')
+  {
+    dataworking$dummy= 0
+    group_var_cat_index <- ncol(dataworking)
+    grp_vars="dummy"
+  }
+  resultDF=NULL
+  variable=NULL
+  
+  #--------To find the percentile values for which percentile needs to be calculated--------------------------  
+  
+  if(percentile_value!="")
+  {
+    pervalue=NULL
+    percentile_value=unlist(strsplit(percentile_value,split="#",fixed=TRUE))
+    for(k in 1:length(percentile_value)){
+      tempVal=gsub("by","to",percentile_value[k])
+      abc=unlist(strsplit(tempVal,split="to",fixed=TRUE))
+      fromVal=as.numeric(abc[1])
+      toVal=as.numeric(abc[2])
+      byVal=as.numeric(abc[3])
+      pervalue=c(pervalue,(seq(from=fromVal,to=toVal,by=byVal))/100)
+    }
+  }
+  result=NULL
+  resultDF=NULL
+  
+  #----------------------- Funtion to append the result---------------------  
+  
+  resultfunc<- function(x)
+  {
+    colnames(result)[which(colnames(result)[-(1:length(grp_vars))] %in% grp_vars)+length(grp_vars)]<-
+      paste(colnames(result)[which(colnames(result)[-(1:length(grp_vars))] %in% grp_vars)+length(grp_vars)],"_",sep="")
+    if(is.null(x)){
+      result<- melt(result,id=c(grp_vars))
+      x<- cbind(x,as.matrix(result))
+    }
+    else
+    {
+      result<- melt(result,id=c(grp_vars))
+      result<- result[,-(1:(length(grp_vars)+1))]
+      x<- cbind(x,as.matrix(result))
+    }
+    return(x)
+  }
+  
+  
+  #-----------------------Max, Min, Missing Count and Missing percentage-----------------------
+  
+  result<-aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],max,na.rm=T)
+  result<-format(result,scientific=F)
+  resultDF<-resultfunc(resultDF)
+  colnames(resultDF)[ncol(resultDF)]<- "maximum"
+  result<-aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],min,na.rm=T)
+  result<-format(result,scientific=F)
+  resultDF<-resultfunc(resultDF)
+  colnames(resultDF)[ncol(resultDF)]<- "minimum"
+  missingcountfunc<- function(x){length<-length(which(is.na(x) == TRUE))
+                                 return(length)}
+  result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],missingcountfunc)
+  resultDF<-resultfunc(resultDF)
+  colnames(resultDF)[ncol(resultDF)]<- "missing_count"
+  missingpercfunc<- function(x){(perc<-length(which(is.na(x) == TRUE))/(nrow(dataworking))*100)
+                                return(perc)}
+  result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],missingpercfunc)
+  resultDF<-resultfunc(resultDF)
+  colnames(resultDF)[ncol(resultDF)]<- "missing_percentage"
+  result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],length) 
+  resultDF<-resultfunc(resultDF)
+  colnames(resultDF)[ncol(resultDF)]<- "count"
+  functionzero<- function(x){zeros<-length(which(x == 0))
+                             return(zeros)}
+  result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],functionzero) 
+  resultDF<-resultfunc(resultDF)
+  colnames(resultDF)[ncol(resultDF)]<- "num_of_zeros"
+  functioniqr<- function(x){iqrthree<-3*IQR(x,na.rm=TRUE)
+                            outlier<- length(which(x > (quantile(x,.75,na.rm=T)+iqrthree) | x < (quantile(x,.25,na.rm=T)-iqrthree)))
+                            return(outlier)}
+  result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],functioniqr)
+  resultDF<-resultfunc(resultDF)
+  colnames(resultDF)[ncol(resultDF)]<- "outliers_3iqr" 
+  
+  
+  #---------------------- Measures of location-------------------------------------------------
+  if(length(measures_of_location))
+  {
+    for(i in 1: length(measures_of_location))
+    {
+      switch(measures_of_location[i],
+             Mean = {result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],mean,na.rm=T)
+                     resultDF<-resultfunc(resultDF)
+                     colnames(resultDF)[ncol(resultDF)]<- "mean"},
+             Median= {result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],median,na.rm=T)
+                      resultDF<-resultfunc(resultDF)
+                      colnames(resultDF)[ncol(resultDF)]<- "median"},
+             Mode= {result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],function(x){x[which.max(x)]})
+                    for(p in 1:ncol(result))
+                    { vec=NULL
+                      for(q in 1:nrow(result))
+                      {
+                        if(class(result[q,p]) == "list"){
+                        
+                          #names(result[q,p])<-"1"
+                          #if(!length(result[p,q]$`1`)){result[p,q]$`1`<-NA}
+                          if(length(unlist(result[q,p]))){
+                            vec[q] <- unlist(result[q,p])  
+                          }else{
+                            vec[q] <- NA
+                          }
+                          
+                          #class(result[q,p])<-'numeric'
+            
+                        }
+                      }
+                      
+                      if(!is.null(vec)){
+                        nm <- colnames(result)[p]
+                        result[,p]<-vec
+                        colnames(result)[p]<- nm
+                        }
+                    }
+                    resultDF<-resultfunc(resultDF)
+                    colnames(resultDF)[ncol(resultDF)]<- "mode"},
+             Midmean= {result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],mean,na.rm=T,trim=0.25)
+                       resultDF<-resultfunc(resultDF)
+                       colnames(resultDF)[ncol(resultDF)]<- "midmean"},
+             TrimmedMean= {result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],mean,na.rm=T,trim=0.05)
+                           resultDF<-resultfunc(resultDF)
+                           colnames(resultDF)[ncol(resultDF)]<- "trimmedmean"
+                           if(all(measures_of_location %in% "Mean" == 'FALSE') & all(measures_of_location %in% "WinsorizedMean" == 'FALSE')){
+                             result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],mean,na.rm=T)
+                             resultDF<-resultfunc(resultDF)
+                             colnames(resultDF)[ncol(resultDF)]<- "mean"
+                           }},
+             WinsorizedMean= {result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],winsor.mean,na.rm=TRUE)
+                              resultDF<-resultfunc(resultDF)
+                              colnames(resultDF)[ncol(resultDF)]<- "winsorizedmean"
+                              if(all(measures_of_location %in% "Mean" == 'FALSE')){
+                                result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],mean,na.rm=T)
+                                resultDF<-resultfunc(resultDF)
+                                colnames(resultDF)[ncol(resultDF)]<- "mean"
+                              }})
+    }
+  }
+  
+  #-----------------------Measures of dispersion----------------------#
+  
+  measures_of_dispersion<- gsub(" ","",measures_of_dispersion)
+  if(length(measures_of_dispersion))
+  {
+    for(i in 1: length(measures_of_dispersion))
+    {
+      switch(measures_of_dispersion[i],
+             StandardDeviation= {result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],sd,na.rm=T)
+                                 resultDF<-resultfunc(resultDF)
+                                 colnames(resultDF)[ncol(resultDF)]<- "stddev"},
+             Range ={max<-aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],max,na.rm=T)
+                     min<-aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],min,na.rm=T)
+                     result<-aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],function(x){max(x,na.rm=T)-min(x,na.rm=T)})
+                     resultDF<-resultfunc(resultDF)
+                     colnames(resultDF)[ncol(resultDF)]<- "range"},
+             InterQuartileRange ={result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],IQR,na.rm=TRUE)
+                                  resultDF<-resultfunc(resultDF)
+                                  colnames(resultDF)[ncol(resultDF)]<- "iqr"
+                                  if(all(measures_of_dispersion %in% "Range" == 'FALSE')){
+                                    max<-aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],max,na.rm=T)
+                                    min<-aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],min,na.rm=T)
+                                    result<-aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],function(x){max(x,na.rm=T)-min(x,na.rm=T)})
+                                    resultDF<-resultfunc(resultDF)
+                                    colnames(resultDF)[ncol(resultDF)]<- "range"}})
+    }
+  }
+  
+  #-------------------------------- Normality-----------------------------------------#
+  
+  if(length(normality))
+  {
+    for(i in 1: length(normality))
+    {
+      switch(normality[i],
+             Skewness ={result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],skewness,na.rm=T)
+                        resultDF<-resultfunc(resultDF)
+                        colnames(resultDF)[ncol(resultDF)]<- "skewness"},
+             Kurtosis ={result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],kurtosis,na.rm=T)
+                        resultDF<-resultfunc(resultDF)
+                        colnames(resultDF)[ncol(resultDF)]<- "kurtosis"},
+      Shapiro_Wilk ={result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],function(x){val<-try(unlist(shapiro.test(x)[2]),silent=T)
+                                                                                                                       if(class(val) == "try-error"){return(NA)}else{return(val)}})
+                    resultDF<-resultfunc(resultDF)
+                    colnames(resultDF)[ncol(resultDF)]<- normality[i]},
+       Kolmogorov_Smirnov= {result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],function(x){val<-try(unlist(ks.test(x,pnorm(mean(x,na.rm=T),sd(x,na.rm=T)))[2]),silent=T)
+                                                                                                                              if(class(val) == "try-error"){return(NA)}else{return(val)}})
+                        resultDF<-resultfunc(resultDF)
+                         colnames(resultDF)[ncol(resultDF)]<- normality[i]},
+      Cramer_Von_Mises ={result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],function(x){val<-try(unlist(cvm.test(x)[2]),silent=T)
+                                                                                                                           if(class(val) == "try-error"){return(NA)}else{return(val)}})
+                    resultDF<-resultfunc(resultDF)
+                            colnames(resultDF)[ncol(resultDF)]<- normality[i]},
+      
+      Anderson_Darling ={result<- aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],function(x){val<-try(unlist(ad.test(x)[2]),silent=T)
+                                                                                                                           if(class(val) == "try-error"){return(NA)}else{return(val)}})
+                     resultDF<-resultfunc(resultDF)
+                              colnames(resultDF)[ncol(resultDF)]<- normality[i]})    
+    }
+  }
+  
+  #--------------------Percentile------------------------#
+  
+  
+  if(percentile == 'true')
+  {
+    functionper<- function(x){resultquant<- quantile(x,pervalue,na.rm=TRUE)
+                              return(resultquant)}
+    result <- as.matrix(aggregate(dataworking[c(cont_var_index)],dataworking[c(group_var_cat_index)],functionper))
+    
+    #---------------- Change the column name as per the format------------------------------    
+    
+    name<- colnames(result)
+    name<-sub(".","$$",name,fixed=TRUE)
+    name<- name[-c(1:length(grp_vars))]
+    name<- strsplit(name,"$$",fixed=TRUE)
+    name<- as.data.frame(name)
+    name<- name[-2,]
+    name1<- t(name)
+    colnames(result)[(length(grp_vars)+1):ncol(result)]<- name1
+    colNo<-colnames(result)
+    colNo<-colNo[(length(grp_vars)+1):length(colNo)]
+    colUnique<-unique(colNo)
+    res=NULL
+    if(grp_vars != "dummy")
+    {
+      for(i in 1:length(colUnique)){
+        index=which(colnames(result)[-c(1:length(grp_vars))] %in% colUnique[i])
+        index= index+(length(grp_vars))
+        intResult=result[,c(index)]
+        variable=rep(colUnique[i],nrow(as.matrix(intResult)))
+        variable=cbind(result[,c(1:length(grp_vars))],variable)
+        intResult=cbind(variable,intResult)
+        res=rbind(res,intResult)
+      }
+    }else{
+      result<- as.data.frame(result)
+      for(i in 1:length(colUnique)){
+        index=which(colnames(result) %in% colUnique[i])
+        intResult=result[,c(index)]
+        variable=rep(colUnique[i],nrow(intResult))
+        variable=cbind(result[,c(1:length(grp_vars))],variable)
+        intResult=cbind(variable,intResult)
+        res=rbind(res,as.matrix(intResult))
+      }
+    }
+    pervalue<-pervalue*100
+    finalCol=c(colnames(variable),paste("p_",pervalue,sep=""))
+    colnames(res)<-finalCol
+    result<- res
+    
+    #------------------- Append result for percentile to final result------------------    
+    
+    if(is.null(resultDF)){
+      result<- as.data.frame(result)
+      resultDF<- result
+    }else{
+      result<- as.data.frame(result)
+      result<- result[,-c(1:(length(grp_vars)+1))]
+      resultDF<- cbind(resultDF,as.matrix(result))
+    }
+  }
+  
+  
+  #---------------- Get final result as CSV file---------------------------------  
+  if(grp_vars != "dummy")
+  {
+    resultDF<- as.data.frame(resultDF)
+    colnames(resultDF)<-gsub(".","_",colnames(resultDF),fixed=TRUE)
+    resultDF<- resultDF[,c((length(grp_vars)+1),1:length(grp_vars),(length(grp_vars)+2):ncol(resultDF))]
+    variable1<- resultDF[,1]
+    index1<-which(variable1 %in% grp_vars_1)
+    value1<-resultDF[c(which(variable1 %in% grp_vars_1)),1]
+    value1<- substring((as.character(value1)), 1, (nchar(as.character(value1))-1))
+    resultDF[,1]<-as.character(resultDF[,1])
+    resultDF[c(index1),1]<-value1
+    
+    # Replacing NaN with NA
+    for(i in 1:ncol(resultDF)){
+      resultDF[,i][which(resultDF[,i]=='NaN')] <- NA
+    }
+    
+    write.csv(resultDF,file = paste(output_path,"UnivariateSummary.csv", sep="/"),quote=FALSE, row.names=FALSE) 
+  }else{
+    resultDF<- as.data.frame(resultDF)
+    resultDF<- resultDF[,-1]
+    colnames(resultDF)<-gsub(".","_",colnames(resultDF),fixed=TRUE)
+    
+    # Replacing NaN with NA
+    for(i in 1:ncol(resultDF)){
+      resultDF[,i][which(resultDF[,i]=='NaN')] <- NA
+    }
+    
+    write.csv(format(resultDF,scientific=F),file = paste(output_path,"UnivariateSummary.csv", sep="/"),quote=FALSE, row.names=FALSE)
+  }
+  return(resultDF)
+  
+}
+
+#----------- Categorical Summary--------------------------------
+
+CategoricalSummaryfunc<- function(categorical_varlist)
+{
+  load(paste(input_data,"/dataworking.RData",sep=""))
+  catData <- as.data.frame(lapply(dataworking[categorical_varlist],factor)) 
+  myFreq <- na.omit(transform(summary(catData)))[,-1]
+  rm(catData)
+  
+  for(i in 1:length(myFreq$Freq))
+  {
+    myFreq$level[i] <- substr(myFreq$Freq[i],1,regexpr(":",myFreq$Freq[i])-1)
+    myFreq$frequency[i] <- substr(myFreq$Freq[i],regexpr(":",myFreq$Freq[i])+1,nchar(as.character(myFreq$Freq[i])))
+  }
+  
+  myFreq <- myFreq[,-2]
+  
+  myFreq$Var2 <- gsub(pattern=" ",
+                      replacement="",
+                      x=myFreq$Var2)
+  
+  names(myFreq)[1]="Variable Name"
+  
+  write.csv(myFreq,file = paste(output_path,"CategoricalSummary.csv", sep="/"),quote=FALSE, row.names=FALSE)
+}
+
+#--------------------------Correlation Matrix----------------------
+CorrelationMatrix<- function(continuous_varlist,grp_vars)
+{ 
+  
+  if(grp_vars !=""){
+for(kl in 1:length(grp_vars))
+  {
+  index<-which(grepl(grp_vars[kl],continuous_varlist) == TRUE)
+  if(length(index) != 0)
+    {
+    continuous_varlist<-continuous_varlist[-c(index)]
+    }
+  }
+}
+ uniquegrp=NULL
+ corDF<-NULL
+ if(length(continuous_varlist)==1){
+   if(grp_vars!= ''){
+     uniquegrp<-unique(dataworking[c(grp_vars)])
+     for(p in 1:ncol(uniquegrp))
+     {
+       if(length(which(is.na.data.frame(uniquegrp[,p])==TRUE))){
+         uniquegrp<-uniquegrp[-c(which(is.na(uniquegrp[,p]))),]
+       }
+     }
+     colnames(uniquegrp)<-paste(colnames(uniquegrp),"_",sep="")
+     variable<- rep(continuous_varlist,nrow(uniquegrp))
+     corDF<-cbind(variable,as.matrix(uniquegrp),rep(1,nrow(uniquegrp)))
+     colnames(corDF)[ncol(corDF)]<-continuous_varlist
+   }else{
+     variable<-continuous_varlist
+     v<-1
+     corDF<-cbind(variable,v)
+     colnames(corDF)[2]<-continuous_varlist
+   }
+ }
+ if(grp_vars == "" & length(continuous_varlist)>1 ){
+   corDF<-cor(dataworking[,c(continuous_varlist)],use="pairwise.complete.obs")
+   corDF<-cbind.data.frame(row.names(corDF),corDF)
+   colnames(corDF)[1]<-"Variables"
+ }else if(grp_vars != "" & length(continuous_varlist)>1){
+   uniquegrp<-unique(dataworking[c(grp_vars)])
+   for(l in 1:ncol(uniquegrp))
+   {
+     uniquegrp[,l]<-as.character(uniquegrp[,l])
+   }
+   
+   for(p in 1:ncol(uniquegrp))
+   {
+     if(length(which(is.na.data.frame(uniquegrp[,p])==TRUE))){
+       uniquegrp<-uniquegrp[-c(which(is.na(uniquegrp[,p]))),]
+     }
+   }
+   subsetdata<-dataworking
+   for(i in 1:nrow(uniquegrp)){
+     subsetdata<-dataworking
+     for(j in 1:length(grp_vars)){
+       subsetdata<-subsetdata[c(which(subsetdata[,grp_vars[j]]==uniquegrp[i,grp_vars[j]])),]
+     }
+     correlation<-cor(subsetdata[,c(continuous_varlist)],use="pairwise.complete.obs")
+     colnames(correlation)
+     variable<-colnames(correlation)
+     grp=NULL
+     cor=NULL
+     grp<-uniquegrp[i,]
+     for(k in 2:length(continuous_varlist)){ 
+       grpf<-uniquegrp[i,]
+       grp<-rbind(grp,grpf)
+     }
+     
+     colnames(grp)<-c(paste(colnames(grp),"_",sep=""))
+     cor<-cbind(variable,grp,correlation)
+     corDF<-rbind.data.frame(corDF,cor)
+     
+   }
+   colnames(corDF)[2:length(grp_vars)]<-grp_vars
+   colnames(corDF)[1]<-"Variables"
+ }
+ 
+ write.csv(corDF, file = paste(output_path, "Correlation_Matrix.csv", sep="/"), quote=FALSE, row.names=FALSE)
+}
+
+#-------------------------Contents Report--------------------------------
+ContentReport<- function(flag_contents)
+{
+  load(paste(input_data,"/dataworking.RData",sep=""))
+  if(length(continuous_varlist) && length(categorical_varlist)){
+  in.data <- dataworking[c(unique(c(continuous_varlist,categorical_varlist)))]
+  }else if(length(continuous_varlist))
+  {
+    in.data <- dataworking[c(unique(continuous_varlist))]
+  }else{
+    in.data <- dataworking[c(unique(categorical_varlist))]
+  }
+  
+  cont.rep <- as.data.frame(NULL)
+  for(i in 1:ncol(in.data))
+  {
+    cont.rep[i, "variable"] <- colnames(in.data[i])
+    
+    if (class(in.data[,i]) == "integer" | class(in.data[,i]) == "numeric")
+    {
+      cont.rep[i, "var_type"] <- "numeric"
+    }
+    else if (class(in.data[,i]) == "factor")
+    {
+      cont.rep[i, "var_type"] <- "string"
+    }
+    
+    cont.rep[i,"distinct_values"] <- length(unique(in.data[,i]))
+    if(!is.null(nrow(in.data[is.na(in.data[,i]),]))){
+      cont.rep[i,"missing_count"] <- nrow(in.data[is.na(in.data[,i]),])
+      cont.rep[i,"missing_perc"] <- (cont.rep[i, "missing_count"]/nrow(in.data))*100
+    }
+    cont.rep[i,"zeros_count"] <- length(which(in.data[,i] %in% 0))
+    cont.rep[i,"zeros_perc"] <- (cont.rep[i, "zeros_count"]/nrow(in.data))*100
+  }
+  rm(in.data)
+  cont.rep <- cont.rep[!(cont.rep$variable %in% "primary_key_1644"), ] 
+  cont.rep$labels<-""
+  cont.rep$comments<-""
+  write.csv(cont.rep, file = paste(output_path, "contents_report.csv", sep="/"), quote=FALSE, row.names=FALSE)
+  
+}
+
+if(length(continuous_varlist) > 0){
+  resultFinal<- try(univariateSummary(continuous_varlist,grp_vars),silent=T)
+}
+
+
+if(length(categorical_varlist) != 0){
+  CategoricalSummaryfunc(categorical_varlist)
+}
+
+if(corrlation_chk=="true"){   
+  CorrelationMatrix(continuous_varlist,grp_vars)
+}
+if(flag_contents == 'true'){
+ContentReport(flag_contents)
+}
+#completed.text
+write("SUMMARY_COMPLETED", file = paste(output_path, "SUMMARY_COMPLETED.txt", sep="/"))

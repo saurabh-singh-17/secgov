@@ -1,0 +1,49 @@
+#=================================================================================
+#parameter play
+#=================================================================================
+c_path_in       <- inputpath
+c_path_out      <- outputpath
+n_grp           <- as.numeric(n_grp)
+c_var_grp       <- paste("grp", n_grp, "_flag", sep="")
+c_grp_flag      <- grp_flag
+c_sampling_variable  <- samplingVar
+c_strata_variable    <- strataVar
+#=========================================================================
+# loading/reading the csv file 
+#================================================================================== 
+
+
+load(paste(c_path_in,"/dataworking.RData",sep=""))
+dataworking <- dataworking
+subset <- T
+# if(n_grp) {
+#   subset <- dataworking[,c_var_grp] == c_grp_flag
+# }
+data <- subset(x=dataworking, subset=subset,select=names(dataworking))
+#=========================================================================
+
+dev       <- sd(data[,c_sampling_variable],na.rm=TRUE)
+
+if((c_strata_variable)!= "")
+{
+  level_dev <- aggregate(x=data[,c_sampling_variable],by=list(
+               data[,c_strata_variable]),FUN=sd,simplify=T)
+  dev       <- mean(level_dev[,"x"],na.rm=T)
+}
+
+dev                     <- data.frame(dev)
+colnames(dev)           <- "stddev"
+n_records               <- data.frame(nrow(data))
+colnames(n_records)     <- "records"
+
+result <- cbind(dev,n_records,row.names=F)
+
+write.csv(result, paste(c_path_out, "/stddev.csv", sep=""),
+          row.names=F, quote=F)
+
+#==================================================================================
+# completed txt
+#==================================================================================
+write("completed", file=paste(c_path_out, "/stddev_completed", ".txt",
+                              sep=""))
+#==================================================================================

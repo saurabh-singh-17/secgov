@@ -1,0 +1,692 @@
+#------------------------------------------------------------------------------------------------------#                                                                                                  --#   
+#-- Process Name : logisticManualReg.R                         
+#-- Description  : Performs logistic regression in R     
+#-- Return type  : csv              
+#-- Author       : saurabh singh
+#------------------------------------------------------------------------------------------------------#
+#libraries Required.
+
+library(car)
+library(QuantPsyc)
+library(statmod)
+library(Hmisc)
+library(aod)
+library(ResourceSelection)
+library(ROCR)
+library(reldist)
+library(parallel)
+
+
+load(paste(inputpath,"/dataworking.RData",sep=""))
+if(exists("grpno")){grpNo<-grpno}
+if(exists("grpflag")){grpFlag<-grpflag}
+  if (as.integer(grpNo)!= 0)
+  {
+    temp_var=paste("grp",grpNo,"_flag",sep="")
+    index<-which(names(dataworking)==temp_var)
+    bygroupdata<-subset(dataworking,dataworking[index]==grpFlag)
+    
+  }else{bygroupdata<-dataworking}
+  
+  # write.csv(bygroupdata,paste(groupPath,"bygroupdata.csv",sep="/"))
+  save(bygroupdata, file = paste(groupPath,"bygroupdata.RData", sep="/"))
+
+Time=NULL
+Function=NULL
+#added fpor creating bygroup Data 
+
+#Making Clusters
+#---------------
+clusters <- makeCluster(getOption("cl.cores", 4))
+
+
+if(logitform == "events_trials")
+{
+  bygroupdata$actual<-0
+  bygroupdata$actual<-eval(parse(text=dependentvariable),envir=bygroupdata)
+  dependentvariable<-"actual"
+}
+primary_key_1644<-"primary_key_1644"
+#keeping only required columns in the dataset-----------------------------------------------
+keepvar=paste("dependentvariable","independentvariables","primary_key_1644",sep=",")
+
+if(validationvar != "")
+{
+  keepvar=paste(keepvar,"validationvar",sep=",")  
+}
+if(length(classvariables) !=0)
+{
+  keepvar=paste(keepvar,"classvariables",sep=",")
+}
+if(weightvar != "")
+{
+  keepvar=paste(keepvar,"weightvar",sep=",")  
+}
+text=paste("bygroupdata[c(",keepvar,")]")
+
+dataworking=eval(parse(text=text))
+rm("bygroupdata")
+
+Function=c(Function, "Data Loaded and variables selected")
+Time=c(Time, as.character(Sys.time()))
+#missing_data-----------------------------------------------------------##
+if(exists("Flagmissingperc")){
+  if(Flagmissingperc=='true'){
+    missing_count<-as.data.frame(apply(dataworking[independentvariables],2,function(x){length(which(is.na(x) | x==""))}))
+    missing_perc<-as.data.frame((missing_count/nrow(dataworking))*100)
+    appData_missing<-cbind.data.frame(independentvariables,missing_count,missing_perc)
+    colnames(appData_missing)<-c("variable","nmiss","miss_per")
+    write.csv(appData_missing,file=paste(outputpath,"appData_missing.csv",sep="/"),quote=FALSE,row.names=FALSE)
+  }
+}
+
+if(length(which(is.na(dataworking)==TRUE))){
+  index<-which(is.na(dataworking)==TRUE)%%nrow(dataworking)
+  if(length(which(index == 0))){index[c(which(index == 0))]=nrow(dataworking)}
+  dataworking<-dataworking[-c(index),]
+}
+if(nrow(dataworking) < 10)
+{
+  write("There are less than 10 observations in the subsetted dataset hence cannot perform modeling", file = paste(outputpath, "INSUFFICIENT_OBSERVATIONS_CONSTRAINT.txt", sep="/"))
+}
+
+#subset on validation----------------------------------------------------------------
+
+if(validationvar != "")
+{
+  if (typelogit=="build")
+  {
+    col_num<-which(names(dataworking)==validationvar)
+    dataworking<-dataworking[which(dataworking[col_num]==1),]
+  }
+  if (typelogit=="validation")
+  {
+    col_num<-which(names(dataworking)==validationvar)
+    dataworking<-dataworking[c(which(dataworking[col_num]==0)),]
+  }
+}
+
+##### providing check for class variables constrains -----------------------------------------
+
+func_len_uniq<-function(x){length(unique(x))}
+new<-apply(dataworking[c(dependentvariable,classvariables)],2,func_len_uniq)
+new<-cbind(names(new),new)
+class_const_var<-new[which(as.numeric(new[,2]) == 1 ),1]
+if(length(class_const_var) != 0)
+{
+  text_1=paste("Following variable(s) have only one level: ",paste(class_const_var,collapse=" , "),". Hence can not run the model.",sep="")
+  write(text_1,paste(outputpath,"CLASS_CONSTRAINT.txt",sep="/"))
+}
+
+# check ends--------------------------------------------------------------------------------
+#outlier_scenario----------------------------------------------------------------------------
+#if(outlier_var != "")
+#{
+#  col_num<-which(names(dataworking)==outlier_var)
+#  dataworking<-dataworking[which(dataworking[col_num]==1),]
+#}
+if(length(classvariables) != 0)
+{
+  independentvariables1<-c(independentvariables,classvariables)
+}else{
+  independentvariables1<-independentvariables
+}
+###model formula creation-------------------------------------------------------------------
+if(logitform != "events_trials"){
+  dataworking$depvar<-apply(dataworking[dependentvariable],1,function(x){if(x == event){return(1)}else{return(0)}})
+}else{
+  dataworking$depvar<-dataworking$actual  
+}
+dependentvariable<-"depvar"
+event<-1
+
+formulaobj=paste(dependentvariable,"~",paste(independentvariables1,collapse="+"))
+
+###making the model----------------------------------------------------------------------------
+model<-"glm"
+if(weightvar == "")
+{
+  lmobj <- eval(parse(text=paste(text=model,"(formulaobj,data=dataworking,family=binomial(link=",modeltype,"))",sep="")))
+}
+if(weightvar != "")
+{
+  lmobj <- eval(parse(text=paste(text=model,"(formulaobj,data=dataworking,family=binomial(link=",modeltype,"),weights=",weightvar,")",sep="")))
+}
+#-------------------------------------------------------------------------
+# Saving the model object so that it can be used for scoring
+#-------------------------------------------------------------------------
+save(lmobj,file=paste(outputpath,"/logmodelobj.RData",sep=""))
+#-------------------------------------------------------------------------
+
+Function=c(Function, "Model is Built")
+Time=c(Time, as.character(Sys.time()))
+
+#parameter estimates-----------------------------------------------------------------##
+
+coeff<-as.data.frame(summary(lmobj)$coefficients)
+coefftable<-cbind(as.data.frame(row.names(coeff)),coeff)
+colnames(coefftable)[1]<-"Variable"
+waldchisq<-Anova(lmobj, type=c("II","III", 2, 3), 
+                 test.statistic=c("Wald"), 
+                 error, error.estimate=c("pearson"))
+waldchisq<-cbind(as.data.frame(row.names(waldchisq)),as.data.frame(waldchisq))
+colnames(waldchisq)[1]<-"Variable"
+if(length(which(is.na(coefficients(lmobj)))) == 0)
+{
+  if(length(independentvariables) != 1){
+    VIF<-vif(lmobj)
+  }else{
+    VIF="NA"  
+  }
+  VIF<-as.data.frame(VIF)
+  VIF<-cbind(row.names(VIF),VIF)
+  colnames(VIF)[1]<-"Variable"
+}else{VIF<-data.frame(rep("NA",nrow(coeff)))
+      VIF$Variable<-coefftable$Variable
+      colnames(VIF)[1]<-"VIF"}
+StandardizedEst<-lm.beta(lmobj)
+StandardizedEst<-cbind(as.data.frame(row.names(as.data.frame(StandardizedEst))),as.data.frame(StandardizedEst))
+colnames(StandardizedEst)[1]<-"Variable"
+coefftable<-merge(coefftable,StandardizedEst,by="Variable",all.x=T)
+coefftable$classval0<-""
+coefftable[,"Variable"]<-as.character(coefftable[,"Variable"])
+if(length(classvariables) != 0)
+{
+  for(i in 1:nrow(coefftable))
+  {
+    for(j in 1:length(classvariables))
+    {
+      if(grepl(classvariables[j],coefftable[i,1]))
+      {
+        coefftable[i,"classval0"]<-gsub(classvariables[j],"",coefftable[i,1])
+        coefftable[i,"Variable"]<-gsub(coefftable[i,"classval0"],"",coefftable[i,1])
+      }
+    }
+  }
+}
+
+paramerer_estimates<-merge(coefftable[c(1,7,2,3,6)],waldchisq[c(1,3,4)],by.x="Variable",by.y="Variable",all.x=T)
+colnames(paramerer_estimates)<-c("Variable","ClassVal0","Estimate","StdErr","StandardizedEst","WaldChiSq","ProbChiSq")
+paramerer_estimates<-merge(paramerer_estimates,VIF[,c(1,2)],by.x="Variable",by.y="Variable",all.x=T)
+colnames(paramerer_estimates)[ncol(paramerer_estimates)]<-"VarianceInflation"
+paramerer_estimates$DF<-1
+paramerer_estimates<-paramerer_estimates[c(1,2,9,3,4,6,7,5,8)]
+
+if(flagVif == "false" & flagonlyvif == "false"){
+  paramerer_estimates<-paramerer_estimates[,-c(9)]
+}
+if(flagonlyvif == "true"){
+  paramerer_estimates<-paramerer_estimates[c("Variable","VarianceInflation")]
+}
+write.csv(paramerer_estimates,paste(outputpath,"parameter_estimates.csv",sep="/"),row.names=F,quote=F)
+
+#type3-----------------------------------------------------------------##
+if(flagonlyvif == "false"){
+  if(flagrunlogit == "true"){
+    if(length(classvariables) != 0){
+      waldchisq           <- waldchisq[c(1,3,2,4)]
+      colnames(waldchisq) <- c("Effect","WaldChiSq","DF","ProbChiSq")             
+      write.csv(waldchisq,paste(outputpath,"type3.csv",sep="/"),row.names=F,quote=F)
+    }
+    
+    
+    
+    #*********** to facilitate further opertation in case of event trials, we are converting all the ratios ***************#
+    #*********** greater than 0.5 as 1 and below as 0. by default event will be taken as 1  *******************#
+    
+    if(logitform == "events_trials"){
+      dataworking$depvar<-apply(dataworking[dependentvariable],1,function(x){if(x >= 0.5){return(1)}else{return(0)}})
+    }
+    
+    #******************************** operation performed ********************************************************#  
+    Function=c(Function, "Parameters estimated and wald's stats calculated ")
+    Time=c(Time, as.character(Sys.time()))    
+    
+    ##----------------------------hosmerlemshow goodness of fit--------------------------------------######
+    if(length(unique(lmobj$fitted.values)) != 1){  
+      hos<-hoslem.test(dataworking[,dependentvariable],lmobj$fitted.values,10)
+      hosmerlem<-NULL
+      Group<-seq(1,10,1)
+      # hosmerlem<-as.data.frame(a)
+      observed<-as.data.frame(hos$observed)
+      expected<-as.data.frame(hos$expected)
+      colval<-nrow(observed)/2
+      observed<-cbind(observed[c(1:colval),c(2,3)],observed[c((colval+1):(colval*2)),c(2,3)])
+      colnames(observed)[c(2,4)]<-c(substr(as.character(observed[1,1]),2,nchar(as.character(observed[1,1]))),substr(as.character(observed[1,3]),2,nchar(as.character(observed[1,3]))))
+      observed<-observed[c(2,4)]
+      indexevent<-which(colnames(observed) == event)
+      colnames(observed)[indexevent]<-"EventsObserved"
+      colnames(observed)[3-indexevent]<-"NoneventsObserved"
+      expected<-cbind(expected[c(1:colval),c(2,3)],expected[c((colval+1):(colval*2)),c(2,3)])
+      colnames(expected)[c(2,4)]<-c(substr(as.character(expected[1,1]),5,nchar(as.character(expected[1,1]))),substr(as.character(expected[1,3]),5,nchar(as.character(expected[1,3]))))
+      expected<-expected[c(2,4)]
+      indexevent<-which(colnames(expected) == event)
+      colnames(expected)[indexevent]<-"EventsExpected"
+      colnames(expected)[3-indexevent]<-"NoneventsExpected"
+      hosmerlem<-cbind(observed,expected)
+      hosmerlem$Total<-hosmerlem[,1]+hosmerlem[,2]
+      hosmerlem$Group<-c(seq(1,colval,1))
+      hosmerlem<-hosmerlem[c(6,5,1,3,2,4)]
+      write.csv(hosmerlem,paste(outputpath,"hl_partition_test.csv",sep="/"),row.names=F,quote=F)
+    }
+    
+    Function=c(Function, "H L stats Calculated")
+    Time=c(Time, as.character(Sys.time()))    
+    ### odds ratio estimates #########################################
+    
+    ######################   odds table   ############################
+    odds<-paramerer_estimates[c(1,4,5)]
+    if(odds[1,1] == "(Intercept)"){
+      odds<-odds[-1,]
+    }
+    odds[3]<-odds[3]*sqrt(lmobj$df.null)
+    odds$LowerCL<-exp(odds[,2]-odds[,3])
+    odds$UpperCL<-exp(odds[,2]+odds[,3])
+    odds$OddsRatioEst<-exp(odds$Estimate)
+    odds<-odds[c("Variable","OddsRatioEst","LowerCL","UpperCL")]
+    colnames(odds)[1]<-"Effect"
+    write.csv(odds,paste(outputpath,"odds.csv",sep="/"),row.names=F,quote=F)
+    
+    Function=c(Function, "Odds ratio generated")
+    Time=c(Time, as.character(Sys.time()))
+    
+    #####model statistics###########################
+    
+    number_of_response_levels<-2
+    Number_of_Observations_Read<-nrow(dataworking)
+    
+    missing<- length(unique(which(is.na(dataworking))%%nrow(dataworking)))
+    noofobs<-nrow(dataworking)
+    noofobsused<-noofobs-missing
+    Number_of_Observations_Used<-noofobsused
+    
+    count_event<-length(which(dataworking[dependentvariable] == event))
+    
+    count_non_event<-(Number_of_Observations_Used-count_event)
+    
+    Quasi_complete_separation_of_dat<-1
+    Log_L_intercept_2<-lmobj$null.deviance
+    AIC_intercept<-(Log_L_intercept_2 + 2)
+    SC_intercept<-(Log_L_intercept_2  + ((2-1) + 0)*log(Number_of_Observations_Used)) 
+    
+    AIC_intercept_covariates<-summary(lmobj)$aic
+    SC_intercept_covariates<-(-2*logLik(lmobj)[1] + (nrow(coefftable))*log(Number_of_Observations_Used))
+    Log_L_intercept_covariates_2<-(-2*(logLik(lmobj)[1]))
+    Likelihood_Ratio<-Log_L_intercept_2-Log_L_intercept_covariates_2
+    Score<-NA
+    if(length(which(is.na(coef(lmobj))))){
+      vec<-coef(lmobj)[-c(which(is.na(coef(lmobj))))]
+    }else{vec<-coef(lmobj)}
+    Wald<-try(wald.test(b = vec, Sigma = vcov(lmobj), Terms = 3:nrow(coefftable)),silent=T)
+    if(class(Wald) != "try-error"){
+      Wald<-unlist(Wald$result)[3]
+    }else{
+      Wald<-"NA"  
+    }
+    
+    write("We Have started Concordance Calculation", file = paste(outputpath, "Concordance Calculation Started.txt", sep="/"))
+    # calculation of concordance and discordance  #
+    
+    
+    condis<-cbind(dataworking[dependentvariable],lmobj$fitted)
+    colnames(condis)<-c("actual","predicted")
+    if(length(unique(condis[,1])) == 1)
+    {
+      index<-which(condis[,2] == min(condis[,2]))[1]
+      condis[index,1]=abs(condis[1,1]-1) 
+      dataworking[index,"depvar"]=abs(condis[1,1]-1) 
+    }
+    contable<-condis[c(which(condis[,1]==event)),]
+    distable<-condis[-c(which(condis[,1]==event)),]
+    conval<-0
+    disval<-0
+    pairs<-0
+    write("In parApply", file = paste(outputpath, "In parApply.txt", sep="/"))
+    con<-survConcordance(Surv(actual)~predicted,data=condis)
+    conval<-con[[2]][2]
+    disval<-con[[2]][1]
+    pairs<-con[[2]][3]
+    #   concheck=function(x,y){
+    #     result=NULL
+    #     result[1]=length(which(x < y))
+    #     result[2]=length(which(x > y))
+    #     result[3]=length(which(x == y))
+    #     return(result)
+    #   }
+    # con<-parApply(cl=clusters,condis[2],1,concheck,y=distable[,2])
+    #   conval<-sum(con[1,],na.rm=T)
+    #   disval<-sum(con[2,],na.rm=T)
+    #   pairs<-sum(con[3,],na.rm=T)
+    concordance<-100*conval/sum(conval,disval,pairs)
+    discordance<-100*disval/sum(conval,disval,pairs)
+    pairs<-100*pairs/sum(conval,disval,pairs)
+    write("Concordance Calculated", file = paste(outputpath, "Concordance Calculation Ended.txt", sep="/"))  
+    
+    Function=c(Function, "Concordance and Discordance Calculated")
+    Time=c(Time, as.character(Sys.time()))
+    ######### end of calculation #########################
+    
+    Percent_Concordant<-concordance
+    Percent_Discordant<-discordance
+    Percent_Tied<-pairs
+    Pairs<-(nrow(contable)*nrow(distable))
+    Somers__D<-(concordance-discordance)/100
+    Gamma<-(concordance-discordance+Percent_Tied)/100
+    Tau_a<-((2*(conval-disval))/(Number_of_Observations_Used*(Number_of_Observations_Used-1)))
+    c<- 0.5 *(1 + Somers__D) 
+    pred<-predict(lmobj)
+    prednew<-NULL
+    prednew[which(pred>=0.5)]<-1
+    prednew[which(pred<0.5)]<-0
+    #prednew<-apply(as.data.frame(pred),1,function(x){if(x>=0.5){return(1)}else{return(0)}})
+    Rsquare<-cor(prednew,predict(lmobj))^2
+    MaxRescaled_Rsquare<-1-((1-Rsquare)*(Number_of_Observations_Used-nrow(coefftable)-2)/(Number_of_Observations_Used-1))
+    
+    if(length(unique(lmobj$fitted.values)) != 1){  
+      HL_ProbChiSq<-unlist(hos[3])
+    }else{
+      HL_ProbChiSq<-"NA"
+    }
+    
+    ProbChiSq_Deviance<-unlist(chisq.test(dataworking[,dependentvariable], residuals(lmobj, type = "deviance")))[3]
+    ProbChiSq_Pearson<-unlist(chisq.test(dataworking[,dependentvariable],residuals(lmobj, type = "pearson")))[3]
+    
+    grouping<-c("model information","model information","model information","dependent variable","dependent variable","dependent variable",
+                "model fit stats","model fit stats","model fit stats","model fit stats","model fit stats","model fit stats","global null hypothesis test","global null hypothesis test"
+                ,"global null hypothesis test","association of predicted prob and observed responses","association of predicted prob and observed responses","association of predicted prob and observed responses"
+                ,"association of predicted prob and observed responses","association of predicted prob and observed responses","association of predicted prob and observed responses"
+                ,"association of predicted prob and observed responses","association of predicted prob and observed responses","model fit stats"
+                ,"model fit stats","hosmer lemeshow goodness of fit test","deviance and pearson goodness of fit stats","deviance and pearson goodness of fit stats")
+    
+    
+    test<-c("number_of_response_levels","Number_of_Observations_Read","Number_of_Observations_Used",
+            "count_event","count_non_event","Quasi_complete_separation_of_dat","AIC_intercept","SC_intercept",
+            "_2_Log_L_intercept","AIC_intercept_covariates","SC_intercept_covariates","_2_Log_L_intercept_covariates",
+            "Likelihood_Ratio","Score","Wald","Percent_Concordant","Percent_Discordant","Percent_Tied","Pairs",
+            "Somers__D","Gamma","Tau_a","c","Rsquare","MaxRescaled_Rsquare","HL_ProbChiSq","ProbChiSq_Deviance",
+            "ProbChiSq_Pearson")
+    overall_stats<-NULL
+    overall_stats<-rbind.data.frame(number_of_response_levels,Number_of_Observations_Read,Number_of_Observations_Used,
+                                    count_event,count_non_event,Quasi_complete_separation_of_dat,AIC_intercept,SC_intercept,Log_L_intercept_2,AIC_intercept_covariates,
+                                    SC_intercept_covariates,Log_L_intercept_covariates_2,Likelihood_Ratio,Score,Wald,
+                                    Percent_Concordant,Percent_Discordant,Percent_Tied,Pairs,Somers__D,Gamma,Tau_a,
+                                    c,Rsquare,MaxRescaled_Rsquare,HL_ProbChiSq,ProbChiSq_Deviance,
+                                    ProbChiSq_Pearson)
+    overall_stats<-cbind(as.data.frame(test),overall_stats,as.data.frame(grouping))
+    colnames(overall_stats)[2]<-"output_values"
+    
+    write.csv(overall_stats,paste(outputpath,"overall_stats.csv",sep="/"),row.names=F,quote=F)
+    Function=c(Function, "Overall Stats generated")
+    Time=c(Time, as.character(Sys.time()))
+  }
+  
+  
+  ####lift and gains charts ####################################################################
+  colnames(condis)<-c("actual","predicted")
+  condis<-condis[c(order(condis$predicted,decreasing=T)),]
+  randomguess<-count_event/Number_of_Observations_Used
+  condis<-cbind(condis,as.data.frame(cut2(condis[,2],g=10)))
+  # 
+  #   percent<-apply(as.data.frame(as.numeric(condis[,3])),1,FUN=function(x){y=10-x
+  #                                                                          z<-(x+y)+(y*10)
+  #                                                                          return(z)})
+  percent<-rep(1:10,each=nrow(condis)/10)
+  if((nrow(condis) - length(percent) > 0))
+  {
+    percent<-c(percent,rep(percent[length(percent)],each=(nrow(condis) - length(percent))))
+  }
+  condis$percent_customers<-c(percent*10)
+  condis<-condis[c(1,2,4)]
+  lifttable<-aggregate(condis[,1],condis[3],function(x){length(which(x==as.numeric(event)))})
+  lifttable$individual_lift<-(lifttable[,2]/(randomguess*Number_of_Observations_Used/10))
+  lifttable$cumulative_lift<-NULL
+  
+  for(i in 1:nrow(lifttable))
+  {
+    lifttable[i,"cumulative_lift"] <-mean(lifttable[c(1:i),3])
+  }
+  
+  lifttable$base<-1
+  lifttable<-lifttable[c(1,5,4,3)]
+  if(flaglift == "true"){
+    write.csv(lifttable,paste(outputpath,"lift.csv",sep="/"),row.names=F,quote=F)
+    Function=c(Function, "Lift csv generated")
+    Time=c(Time, as.character(Sys.time()))
+  }
+  
+  gainstable<-NULL
+  gainstable$percent_customers <- as.data.frame(unlist(lifttable$percent_customers))
+  gainstable$random<- lifttable$percent_customers
+  gainstable$percent_positive_response<-0
+  gainstable<-as.data.frame(gainstable)
+  
+  for(i in 1:nrow(gainstable))
+  {
+    gainstable[i,"percent_positive_response"]<-sum(lifttable[c(1:i),"individual_lift"])*10
+  }
+  colnames(gainstable)[1]<-"percent_customers"
+  if(flaggains == "true"){
+    write.csv(gainstable,paste(outputpath,"gains.csv",sep="/"),row.names=F,quote=F)
+    Function=c(Function, "Gains csv generated")
+    Time=c(Time, as.character(Sys.time()))
+  }
+  ####################classification table################################################
+
+    if(flagrunlogit == "true"){
+      ProbLevel<-seq(0.000,1.000,0.001)
+      classification_table<-as.data.frame(ProbLevel)
+      calc<-function(x,condis){
+        condis$binaryresponse<-0
+        condis$binaryresponse[which(condis[2]>=x)]<-1
+        return(c(length(which((condis[,"actual"] == condis[,"binaryresponse"]) & condis[,"actual"] == 1)),
+        length(which(condis[,"actual"] == condis[,"binaryresponse"] & condis[,"actual"] != 1)),
+        length(which((condis[,"actual"] != condis[,"binaryresponse"]) & condis[,"binaryresponse"] == 1)),
+        length(which((condis[,"actual"] == 1) & condis[,"binaryresponse"] != 1))))
+      }
+      new<-parApply(cl=clusters,as.data.frame(ProbLevel),1,calc,condis=condis)
+      new<-t(as.data.frame(new))
+      colnames(new)<-c("CorrectEvents","CorrectNonevents","IncorrectEvents","IncorrectNonevents")
+      classification_table<-cbind(classification_table,new)
+      
+      classification_table["Correct"]<-(classification_table["CorrectEvents"]+classification_table["CorrectNonevents"])/
+        (classification_table["CorrectEvents"]+classification_table["CorrectNonevents"]+classification_table["IncorrectEvents"]+classification_table["IncorrectNonevents"])*100
+      classification_table["Sensitivity"]<-classification_table["CorrectEvents"]/(classification_table["CorrectEvents"]+classification_table["IncorrectNonevents"])*100
+      classification_table["Specificity"]<-classification_table["CorrectNonevents"]/(classification_table["CorrectNonevents"]+classification_table["IncorrectEvents"])*100
+      classification_table["FalsePositive"]<-classification_table["IncorrectEvents"]/(classification_table["CorrectEvents"]+classification_table["IncorrectEvents"])*100
+      classification_table["FalseNegative"]<-classification_table["IncorrectNonevents"]/(classification_table["CorrectNonevents"]+classification_table["IncorrectNonevents"])*100
+      classification_table[,1]<-as.character(classification_table[,1])
+      classification_table[1,1]<-"0.000"
+      fun_change<-function(x){if(x!=1){len=length(unlist(strsplit(x,"")))
+                              text1=paste(rep("0",5-len),collapse="")
+                              y=paste(x,text1,sep="")}else{
+                              y="1.000"}
+                              return(y)}
+      classification_table[1]<-apply(classification_table[1],1,fun_change)
+      write.csv(classification_table,paste(outputpath,"classification_table.csv",sep="/"),row.names=F,quote=F)
+      Function=c(Function, "Classification table generated")
+      Time=c(Time, as.character(Sys.time()))
+    }
+  ############classification table completed #####################################################################
+  
+  ###########################roc_s#############################################
+  if(flagrocs == "true"){
+    roc_s<-as.data.frame(classification_table[c("ProbLevel","Sensitivity","Specificity")])
+    roc_s$Sensitivity<-roc_s$Sensitivity/100
+    roc_s$Specificity<-roc_s$Specificity/100
+    colnames(roc_s)<-c("_PROB_","SENSITIVITY","SPECIFICITY")
+    write.csv(roc_s,paste(outputpath,"roc_s.csv",sep="/"),row.names=F,quote=F)
+    Function=c(Function, "ROC_S generated")
+    Time=c(Time, as.character(Sys.time()))
+  }
+  
+  ########## roc_s completed ######################################################
+  
+  ##########################ROC1 ###################################################
+  
+  if(flagroc1 == "true"){
+    roc1<-roc_s[c("SPECIFICITY","SENSITIVITY")]
+    roc1$SPECIFICITY<-c(1-roc1$SPECIFICITY)
+    colnames(roc1)[1]<-c("ONE_MINUS_SPECIFICITY")
+    roc1<-roc1[c(1001:1),]
+    write.csv(roc1,paste(outputpath,"roc1.csv",sep="/"),row.names=F,quote=F)
+    Function=c(Function, "ROC_1 Generated")
+    Time=c(Time, as.character(Sys.time()))
+  }
+  
+  ###########################actual vs predicted###################################################
+  
+  if(flagactpred == "true"){
+    
+    predicted_actual<-NULL
+    deciles<-seq(0,9,1)
+    predicted_actual<-as.data.frame(deciles)
+    predicted<-aggregate(condis$predicted,condis["percent_customers"],mean)
+    predicted<-as.data.frame(predicted*100)[2]
+    colnames(predicted)<-"predicted"
+    
+    condis$newactual<-apply(condis["actual"],1,function(x){if(x==event){return(1)}else{return(0)}})
+    actual<-aggregate(condis$newactual,condis["percent_customers"],mean)
+    actual<-as.data.frame(actual*100)[2]
+    colnames(actual)<-"actual"
+    
+    predicted_actual<-cbind(predicted_actual,predicted,actual)
+    predicted_actual$average_rate<-mean(predicted_actual$actual)
+    predicted_actual$pred_by_actual<-predicted_actual$predicted/predicted_actual$actual
+    
+    write.csv(predicted_actual,paste(outputpath,"predicted_actual.csv",sep="/"),row.names=F,quote=F)
+    
+    average_rate<-as.data.frame(mean(predicted_actual$actual))
+    colnames(average_rate)<-"average_rate"
+    write.csv(average_rate,paste(outputpath,"average_rate.csv",sep="/"),row.names=F,quote=F)
+    Function=c(Function, "Actual Vs Predicted Generated")
+    Time=c(Time, as.character(Sys.time()))
+    
+  }
+  ##########################ks test###########################################################
+  if(flagkstest){
+    
+    rank_pred<-seq(0,9,1)
+    ks_out<-as.data.frame(rank_pred)
+    
+    count_events<-as.data.frame(aggregate(condis$actual,condis[3],function(x){length(which(x == event))})[,2])
+    colnames(count_events)<-"count_events"
+    
+    percent_events<-as.data.frame(apply(count_events[1],1,function(x){y=(x/sum(count_events[,1])*100) 
+                                                                      return(y)}))
+    colnames(percent_events)<-"percent_events"
+    
+    count_nonevents<-as.data.frame(aggregate(condis$actual,condis[3],function(x){length(which(x != event))})[2])
+    colnames(count_nonevents)<-"count_nonevents"
+    
+    percent_nonevents<-as.data.frame(apply(count_nonevents[1],1,function(x){y=(x/sum(count_nonevents[,1])*100) 
+                                                                            return(y)}))
+    colnames(percent_nonevents)<-"percent_nonevents"
+    
+    count_accts<-count_events+count_nonevents
+    colnames(count_accts)<-"count_accts"
+    
+    percent_accts<-as.data.frame(apply(count_accts[1],1,function(x){y=(x/sum(count_accts[,1])*100) 
+                                                                    return(y)}))
+    colnames(percent_accts)<-"percent_accts"
+    
+    cumm_accts<-cumsum(count_accts)
+    colnames(cumm_accts)<-"cumm_accts"
+    
+    pred_resp<-predicted_actual["predicted"]
+    colnames(pred_resp)<-"pred_resp"
+    
+    act_resp<-predicted_actual["actual"]  
+    colnames(act_resp)<-"act_resp"
+    
+    minimum<-as.data.frame(aggregate(condis[,"predicted"],condis["percent_customers"],min)[2])
+    colnames(minimum)<-"minimum"
+    
+    maximum<-as.data.frame(aggregate(condis[,"predicted"],condis["percent_customers"],max)[2])
+    colnames(maximum)<-"maximum"
+    cumm_respr<-as.data.frame(seq(0,9,1))
+    colnames(cumm_respr)<-"cumm_respr"
+    for(i in 1:nrow(act_resp))
+    {
+      cumm_respr[i,"cumm_respr"] <-mean(act_resp[c(1:i),1])
+    }
+    cumresp<-cumsum(count_events)
+    colnames(cumresp)<-"cumresp"
+    pctresp<-cumsum(percent_events)
+    colnames(pctresp)<-"pctresp"
+    
+    ####ks test values  and gini #######################
+    ksvalfinal<-NULL
+    ginivalfinal<-NULL
+    condis$prednew<-0
+    condis$prednew[which(condis[2]>=0.5)]<-1
+    
+    #condis$prednew<-apply(as.data.frame(condis[2]),1,function(x){if(x>=0.5){return(1)}else{return(0)}})
+    for(i in 1:10){
+      test<-condis[c(which(condis[,"percent_customers"] == (i*10))),]
+      ksval<-ks.test(test[,1],test[,"prednew"])
+      ksvalfinal<-c(ksvalfinal,(unlist(ksval[1])))
+      ginival<-gini(test[,1])
+      ginivalfinal<-c(ginivalfinal,ginival)
+    }
+    ks<-as.data.frame(ksvalfinal)
+    colnames(ks)<-"ks"
+    gini<-as.data.frame(ginivalfinal)
+    colnames(gini)<-"gini"
+    
+    
+    ###########ks values end here  gini ##################################
+    
+    gof<-rep("NA",10)
+    gof<-as.data.frame(gof)
+    colnames(gof)<-"gof"
+    
+    ###combining all into ks_out table################################
+    
+    ks_out<-cbind(rank_pred,count_events,  percent_events,  count_nonevents,  percent_nonevents,	count_accts,	percent_accts,	cumm_accts,	pred_resp,	act_resp,	minimum,	maximum,	cumm_respr,	cumresp,	pctresp,	ks,	gof,	gini)
+    
+    write.csv(ks_out,paste(outputpath,"ks_out.csv",sep="/"),row.names=F,quote=F)
+    Function=c(Function, "KS Output generated ")
+    Time=c(Time, as.character(Sys.time()))
+    
+    #########################################################################
+    
+    
+    ks_rep<-"badrate"
+    ks_rep<-as.data.frame(ks_rep)
+    colnames(ks_rep)<-"attribute"
+    ks_rep$order_flag<-NA
+    ks_rep$ranking<-"NOT SATISFACTORY"
+    ks_rep$set_rank<-NA
+    ks_rep$max_ks_dec<-which(ks_out$ks == max(ks_out$ks))[1]
+    ks_rep$ks<-max(ks_out$ks)
+    ks_rep$gof<-NA
+    
+    
+    write.csv(ks_rep,paste(outputpath,"ks_rep.csv",sep="/"),row.names=F,quote=F)
+    
+  }
+  
+  ############ks_rep completed ##################################################
+  
+  predprob<-as.data.frame(lmobj$fitted)
+  predprob$prednew<-0
+  predprob$prednew[which(predprob >=0.5)]<-1
+  #predprob$prednew<-apply(as.data.frame(predprob),1,function(x){if(x>=0.5){return(1)}else{return(0)}})
+  predprob<-cbind(predprob,dataworking["primary_key_1644"])
+  colnames(predprob)<-c("prob","pred","primary_key_1644")
+  write.csv(predprob,paste(outputpath,"predprob.csv",sep="/"),row.names=F,quote=F)
+  #####--------------completed text file------------------------------###########
+}
+
+Function=c(Function, "KS Rep Over and Logistic Regression Completed ")
+Time=c(Time, as.character(Sys.time()))
+
+write.csv(cbind.data.frame(Function, Time),file = paste(outputpath, "Logistic Result.csv", sep="/"))
+
+write("Logistic Regression - MANUAL_REGRESSION_COMPLETED", file = paste(outputpath, "MANUAL_REGRESSION_COMPLETED.txt", sep="/"))
+
+
+
+
+
+#**************---------logistic regression completed ******************#

@@ -1,0 +1,138 @@
+#---------------------------------------------------------------------------------------#
+#--                                                                                   --#
+#--  Project Name:   Text Mining                                                      --#
+#--  Task :          Task 1: Data Handling                        			      	  --#
+#--  Sub-Task:       1.1 Appending the pre-processed data to the original file        --#
+#--  version :       1.0 date: 14/03/2012 author: Gaurav Jain		          		  --#
+#---------------------------------------------------------------------------------------#
+
+
+is.installed <- function(pkg){ is.element(pkg, installed.packages()[,1])}
+
+
+
+dataHandling <- function(filePath, fileName, varName, newVarName,
+                         removeEmails  = FALSE, removeUrls = FALSE,
+                         removePhoneNumber = FALSE, removeNumber = FALSE,
+                         removePunctuations = FALSE, removeStopwords = FALSE,
+                         stripWhitespaces = FALSE, stemDoc = FALSE){
+if(!is.installed('RTextTools')){
+  install.packages('RTextTools',repo="http://lib.stat.cmu.edu/R/CRAN")
+  library('RTextTools')
+}
+
+
+
+if(!is.installed('Snowball')){
+  install.packages('Snowball',repo="http://lib.stat.cmu.edu/R/CRAN")
+  library('Snowball')
+}
+
+
+  require('RTextTools')
+ require('Snowball')
+
+  # Regular expressions to match 1. Email, 2. URL, 3. Phone number
+  #---------------------------------------------------------------
+
+  email.expression <- "[A-Za-z0-9-]+[.A-Za-z0-9-]*@[A-Za-z0-9-]+(\\.com|\\.co.in|\\.net|\\.org|\\.info|\\.edu|\\.mil|\\.gov|\\.biz|\\.ws|\\.us|\\.tv|\\.cc|\\.aero|\\.arpa|\\.coop|\\.int|\\.jobs|\\.museum|\\.name|\\.pro)|\\.travel|\\.nato)"
+  url.expression <- "(http://|https://|www.)[[:alnum:]~!#$%&+-=?,:/;._]*"
+  phonenumber.expression <- "\\+?(\\d{2,3})[- ]?\\(?(\\d{3,5})\\)?[- ]?(\\d{3,5})[- ]?(\\d{4})?"
+
+  # To read data from a single csv file and create a dataset of required column
+  #----------------------------------------------------------------------------
+
+  fileLoc <- paste(filePath,fileName,sep="/")
+
+  tmDataSet <- read_data(fileLoc,type="csv")
+
+  varIndex <- which(colnames(tmDataSet)==varName)
+
+  corpus <- tolower(tmDataSet[,varIndex])
+
+  # To remove emails from dataset
+  #----------------------------------------------------------------------------
+
+  if(removeEmails) {
+    corpus <- gsub(email.expression,' ', corpus, ignore.case = TRUE)
+  }
+
+  # To remove urls from dataset
+  #----------------------------------------------------------------------------
+
+  if(removeUrls) {
+    corpus <- gsub(url.expression,' ', corpus, ignore.case = TRUE)
+  }
+
+  # To remove phone numbers from dataset
+  #----------------------------------------------------------------------------
+
+  if(removePhoneNumber) {
+    corpus <- gsub(phonenumber.expression,' ', corpus, ignore.case = TRUE)
+  }
+
+  # To covert dataset into a Corpus; required for executing 'tm_map' functions
+  #----------------------------------------------------------------------------
+
+  corpus <- Corpus(VectorSource(corpus))
+
+  # To remove stopwords from corpus
+  #----------------------------------------------------------------------------
+
+  if(removeStopwords) {
+    corpus <- tm_map(corpus, removeWords, stopwords("english"))
+  }
+
+  # To remove numbers from corpus
+  #----------------------------------------------------------------------------
+
+  if(removeNumber) {
+    corpus <- tm_map(corpus, removeNumbers)
+  }
+
+  # To remove punctuations from corpus
+  #----------------------------------------------------------------------------
+
+  if(removePunctuations) {
+    corpus <- tm_map(corpus, removePunctuation, preserve_intra_word_dashes = TRUE)
+  }
+
+  # To stem words present in the corpus data
+  #----------------------------------------------------------------------------
+
+  if(stemDoc) {
+    corpus <- tm_map(corpus, stemDocument)
+  }
+
+  # To remove additional whitespaces from corpus
+  #----------------------------------------------------------------------------
+
+  if(stripWhitespaces) {
+    corpus <- tm_map(corpus, stripWhitespace)
+  }
+
+  # To add data post pre-processing as a new column in the original dataset
+  #----------------------------------------------------------------------------
+
+  dataSize <- nrow(tmDataSet)
+  newCol <- unlist(corpus[1:dataSize])
+
+  tmDataSetNew <- cbind(tmDataSet,newCol)
+
+  newColIndex <- which(colnames(tmDataSetNew)=='newCol')
+
+  colnames(tmDataSetNew)[newColIndex] = newVarName
+
+  # To write the new dataset to the original csv file
+  #----------------------------------------------------------------------------
+
+  write.csv(tmDataSetNew, file = fileLoc, append = FALSE, col.names = TRUE,
+            row.names = FALSE)
+
+  # To clear all variable used
+  #----------------------------------------------------------------------------
+
+  rm(list=c("filePath","fileName","fileLoc", "varName","newVarName","tmDataSet",
+            "tmDataSetNew","corpus","newCol","newColIndex","varIndex","dataSize"))
+
+}

@@ -1,0 +1,2641 @@
+(dp1
+S'createdon'
+p2
+S'Oct 17 2014 19:30:04 +0000'
+p3
+sS'type'
+p4
+S'nltk.classify.maxent.MaxentClassifier'
+p5
+sS'classifier'
+p6
+ccopy_reg
+_reconstructor
+p7
+(cnltk.classify.maxent
+MaxentClassifier
+p8
+c__builtin__
+object
+p9
+NtRp10
+(dp11
+S'_logarithmic'
+p12
+I01
+sS'_encoding'
+p13
+g7
+(cnltk.classify.maxent
+GISEncoding
+p14
+g9
+NtRp15
+(dp16
+S'_labels'
+p17
+(lp18
+S'positive'
+p19
+aS'neutral'
+p20
+aS'negative'
+p21
+asS'_C'
+p22
+I93
+sS'_mapping'
+p23
+(dp24
+(S'Has 1 positive adverb'
+I01
+S'neutral'
+p25
+tp26
+I136
+s(S'has neutral Polar 3G'
+I00
+g19
+tp27
+I377
+s(S'contains a url with polar words'
+p28
+I00
+g20
+tp29
+I8
+s(S'Has 1 positive smiley'
+I01
+S'negative'
+tp30
+I305
+s(S'exclamation'
+p31
+I1
+S'neutral'
+p32
+tp33
+I120
+s(S'Has 2 ADVP_1'
+I00
+g21
+tp34
+I176
+s(S'Has 3 NP_1'
+I00
+g19
+tp35
+I349
+s(S'Has 1 VP_-1'
+I01
+S'positive'
+p36
+tp37
+I455
+s(S'Has 3 positive verb'
+I01
+S'positive'
+p38
+tp39
+I473
+s(S'Has 2 NP_-1'
+I00
+g21
+tp40
+I241
+s(S'Has 1 ADVP_1'
+I01
+S'negative'
+tp41
+I301
+s(S'no pos words'
+p42
+I01
+S'neutral'
+p43
+tp44
+I108
+s(S'contains a url with max of positive words'
+p45
+I00
+g21
+tp46
+I171
+s(S'Has 3 positive adjective'
+I00
+g21
+tp47
+I236
+s(g45
+I00
+g20
+tp48
+I13
+s(S'Has 3 PP_-1'
+I00
+g19
+tp49
+I351
+s(S'positiveinterjection'
+p50
+I00
+g20
+tp51
+I77
+s(S'Has 1 positive verb'
+I00
+g21
+tp52
+I195
+s(S'Has 1 negative verb'
+I00
+g20
+tp53
+I61
+s(S'Has 2 ADVP_1'
+I00
+g20
+tp54
+I18
+s(S'Has 3 positive adjective'
+I01
+S'positive'
+tp55
+I464
+s(S'Has 1 VP_-1'
+I01
+S'negative'
+p56
+tp57
+I260
+s(S'Has 1 NP_0'
+I00
+g19
+tp58
+I378
+s(S'Has 2 negative verb'
+I01
+S'positive'
+p59
+tp60
+I478
+s(S'Has 1 VP_-1'
+I00
+g20
+tp61
+I43
+s(S'Has 3 ADVP_0'
+I00
+g19
+tp62
+I387
+s(S'Has -1 netPosteriorPolarChunks'
+I01
+S'positive'
+p63
+tp64
+I436
+s(S'Has 1 VP_1'
+I01
+S'neutral'
+p65
+tp66
+I105
+s(S'Has 1 ADJP_1'
+I01
+S'positive'
+p67
+tp68
+I423
+s(S'negativeinterjection'
+p69
+I01
+S'negative'
+tp70
+I308
+s(S'dollar'
+p71
+I1
+S'positive'
+tp72
+I488
+s(S'Has 1 negative smiley'
+I00
+g20
+tp73
+I31
+s(S'Has 1 netPosteriorPolarChunks'
+I01
+S'neutral'
+p74
+tp75
+I101
+s(S'Has 3 NP_-1'
+I00
+g19
+tp76
+I407
+s(S'Has 2 positive adjective'
+I01
+S'positive'
+tp77
+I424
+s(S'no pol words'
+p78
+I01
+S'positive'
+p79
+tp80
+I426
+s(S'no neg words'
+p81
+I01
+g65
+tp82
+I107
+s(S'Has 3 VP_1'
+I00
+g20
+tp83
+I71
+s(S'Has 2 NP_0'
+I00
+g19
+tp84
+I364
+s(S'Has 1 NP_1'
+I00
+g21
+tp85
+I215
+s(S'Has 2 negative adjective'
+I00
+g19
+tp86
+I370
+s(S'Has 3 NP_-1'
+I00
+g20
+tp87
+I85
+s(S'Has 1 ADJP_0'
+I01
+S'neutral'
+tp88
+I102
+s(S'Has 3 negative verb'
+I00
+g20
+tp89
+I30
+s(g45
+I00
+g19
+tp90
+I335
+s(S'contains a url with max of neutral words'
+p91
+I01
+S'negative'
+p92
+tp93
+I268
+s(S'Has 3 positive verb'
+I00
+g19
+tp94
+I323
+s(S'Has 2 ADVP_0'
+I00
+g21
+tp95
+I175
+s(g31
+I0
+g20
+tp96
+I47
+s(S'Has 1 negative smiley'
+I01
+S'negative'
+tp97
+I290
+s(S'Has 3 VP_0'
+I00
+g19
+tp98
+I391
+s(g69
+I00
+g21
+tp99
+I220
+s(S'Has 3 ADVP_0'
+I00
+g20
+tp100
+I65
+s(S'Has 1 ADVP_0'
+I01
+g19
+tp101
+I338
+s(g78
+I01
+g20
+tp102
+I39
+s(S'Has 3 VP_-1'
+I01
+S'negative'
+p103
+tp104
+I321
+s(S'has positive Polar 3G'
+I00
+g20
+tp105
+I6
+s(S'Has 1 netPosteriorPolarChunks'
+I01
+g19
+tp106
+I402
+s(g45
+I01
+g67
+tp107
+I420
+s(S'Has 1 ADJP_-1'
+I01
+g43
+tp108
+I110
+s(S'Has 1 ADJP_0'
+I00
+g20
+tp109
+I81
+s(S'Has 1 ADJP_-1'
+I00
+g21
+tp110
+I203
+s(g42
+I00
+g21
+tp111
+I158
+s(S'Has 1 negative verb'
+I01
+S'negative'
+p112
+tp113
+I254
+s(S'Has 1 VP_1'
+I01
+g19
+tp114
+I360
+s(S'Has 1 negative adverb'
+I00
+g19
+tp115
+I333
+s(S'Has 3 negative adverb'
+I00
+g19
+tp116
+I398
+s(S'Has 3 VP_-1'
+I00
+g19
+tp117
+I375
+s(S'Has 1 NP_1'
+I01
+g74
+tp118
+I100
+s(S'Has 2 negative verb'
+I00
+g19
+tp119
+I395
+s(S'has negative Polar 2G'
+I00
+g21
+tp120
+I194
+s(S'Has 1 positive smiley'
+I01
+S'positive'
+tp121
+I458
+s(S'HasProfanity'
+p122
+I00
+g112
+tp123
+I249
+s(S'Has 1 VP_1'
+I00
+g21
+tp124
+I196
+s(S'Has 3 negative adjective'
+I00
+g20
+tp125
+I23
+s(S'Has 1 positive adverb'
+I00
+g21
+tp126
+I237
+s(S'Has 2 ADVP_0'
+I01
+S'neutral'
+p127
+tp128
+I112
+s(S'has positive Polar 3G'
+I01
+S'neutral'
+p129
+tp130
+I146
+s(S'Has 2 VP_-1'
+I00
+g19
+tp131
+I408
+s(S'Has 3 VP_-1'
+I00
+g20
+tp132
+I53
+s(g31
+I1
+S'positive'
+p133
+tp134
+I439
+s(S'Has 1 ADVP_-1'
+I00
+g21
+tp135
+I178
+s(g81
+I00
+g20
+tp136
+I40
+s(S'Has 1 positive verb'
+I01
+S'negative'
+p137
+tp138
+I280
+s(S'Has 2 PP_1'
+I00
+g19
+tp139
+I388
+s(S'Has 2 positive adjective'
+I01
+S'negative'
+p140
+tp141
+I318
+s(S'question'
+p142
+I1
+S'neutral'
+tp143
+I117
+s(S'has neutral Polar 3G'
+I00
+g20
+tp144
+I55
+s(S'Has 2 ADJP_0'
+I01
+g36
+tp145
+I457
+s(S'Has 1 ADJP_-1'
+I01
+S'positive'
+tp146
+I459
+s(S'Has 2 ADJP_1'
+I00
+g20
+tp147
+I21
+s(S'Has 1 NP_-1'
+I00
+g19
+tp148
+I329
+s(S'Has 2 ADJP_1'
+I01
+S'positive'
+tp149
+I465
+s(S'Has 1 ADVP_-1'
+I01
+g137
+tp150
+I279
+s(S'Has 3 ADVP_-1'
+I00
+g21
+tp151
+I180
+s(S'negativehashtag'
+p152
+I01
+S'positive'
+tp153
+I461
+s(g50
+I01
+S'positive'
+tp154
+I466
+s(S'Has 2 ADJP_-1'
+I00
+g20
+tp155
+I82
+s(g69
+I00
+g19
+tp156
+I384
+s(S'Has 1 VP_0'
+I00
+g20
+tp157
+I33
+s(S'Has 3 ADJP_0'
+I01
+S'positive'
+tp158
+I485
+s(S'Has 1 hasIntensifier'
+I01
+S'neutral'
+tp159
+I138
+s(S'Has 3 NP_1'
+I01
+S'positive'
+tp160
+I469
+s(S'Has 1 ADVP_0'
+I01
+g74
+tp161
+I98
+s(S'period'
+p162
+I1
+g19
+tp163
+I326
+s(S'Has 2 positive adverb'
+I00
+g21
+tp164
+I163
+s(S'Has 2 negative adverb'
+I00
+g21
+tp165
+I161
+s(g71
+I0
+g20
+tp166
+I19
+s(S'Has 3 VP_0'
+I01
+g20
+tp167
+I69
+s(S'Has 1 ADJP_1'
+I00
+g20
+tp168
+I49
+s(S'Has 2 ADVP_-1'
+I00
+g20
+tp169
+I87
+s(S'Has 2 VP_-1'
+I01
+S'negative'
+p170
+tp171
+I298
+s(S'Has 3 negative verb'
+I00
+g19
+tp172
+I352
+s(S'Has 1 ADJP_1'
+I01
+S'neutral'
+p173
+tp174
+I124
+s(S'Has 1 ADVP_1'
+I00
+g19
+tp175
+I337
+s(S'Has 2 negative adjective'
+I01
+S'neutral'
+tp176
+I122
+s(S'Has 2 VP_1'
+I01
+S'negative'
+p177
+tp178
+I314
+s(S'Has 3 negative adjective'
+I01
+S'negative'
+p179
+tp180
+I309
+s(S'Has 3 ADJP_0'
+I00
+g21
+tp181
+I217
+s(S'contains a url with max of negative words'
+p182
+I01
+S'negative'
+tp183
+I288
+s(S'Has 2 PP_-1'
+I00
+g21
+tp184
+I228
+s(S'Has 2 VP_0'
+I01
+S'neutral'
+p185
+tp186
+I89
+s(S'Has 1 negative smiley'
+I00
+g19
+tp187
+I353
+s(S'Has 2 NP_1'
+I01
+S'negative'
+tp188
+I289
+s(S'Has 3 ADJP_0'
+I01
+S'neutral'
+tp189
+I142
+s(g71
+I1
+S'neutral'
+tp190
+I155
+s(S'Has 1 VP_0'
+I00
+S'positive'
+p191
+tp192
+I412
+s(S'Has 3 PP_1'
+I00
+g21
+tp193
+I160
+s(g78
+I00
+g112
+tp194
+I252
+s(S'Has 3 PP_-1'
+I00
+g20
+tp195
+I29
+s(S'Has 2 NP_0'
+I01
+S'negative'
+p196
+tp197
+I273
+s(S'Has -1 netPosteriorPolarChunks'
+I00
+g112
+tp198
+I255
+s(S'Has 3 ADVP_0'
+I01
+S'negative'
+tp199
+I283
+s(S'Has 2 VP_-1'
+I00
+g20
+tp200
+I86
+s(S'Has 1 ADVP_-1'
+I01
+g63
+tp201
+I435
+s(g91
+I00
+g20
+tp202
+I44
+s(g142
+I0
+g21
+tp203
+I170
+s(S'Has 1 NP_0'
+I00
+g20
+tp204
+I56
+s(S'Has 1 negative verb'
+I00
+g19
+tp205
+I383
+s(S'has neutral Polar 2G'
+I01
+g36
+tp206
+I454
+s(S'Has 1 negative adjective'
+I00
+g21
+tp207
+I192
+s(g91
+I00
+g19
+tp208
+I366
+s(S'Has 1 negative adverb'
+I01
+S'negative'
+p209
+tp210
+I292
+s(S'Has 2 ADJP_0'
+I01
+S'neutral'
+tp211
+I123
+s(S'Has 3 NP_0'
+I00
+g196
+tp212
+I272
+s(S'Has 2 positive verb'
+I01
+S'positive'
+p213
+tp214
+I452
+s(S'Has 2 ADJP_0'
+I00
+g21
+tp215
+I221
+s(g81
+I00
+g79
+tp216
+I427
+s(S'Has 2 PP_0'
+I01
+g127
+tp217
+I113
+s(S'has negative Polar 3G'
+I00
+g21
+tp218
+I212
+s(S'Has 1 VP_0'
+I01
+S'negative'
+tp219
+I262
+s(S'Has 1 positive adverb'
+I01
+g133
+tp220
+I441
+s(S'Has 0 netPosteriorPolarChunks'
+I00
+g19
+tp221
+I406
+s(S'has positive Polar 3G'
+I00
+g19
+tp222
+I328
+s(S'Has 1 netPosteriorPolarChunks'
+I00
+g21
+tp223
+I238
+s(S'Has 1 VP_-1'
+I01
+g32
+tp224
+I119
+s(S'Has 3 NP_1'
+I00
+g20
+tp225
+I27
+s(S'Has 2 negative adverb'
+I01
+g137
+tp226
+I278
+s(S'Has 3 VP_0'
+I00
+g185
+tp227
+I93
+s(S'Has 1 PP_1'
+I00
+g20
+tp228
+I52
+s(S'Has 1 negative adverb'
+I00
+g20
+tp229
+I11
+s(S'Has 2 VP_0'
+I01
+g67
+tp230
+I421
+s(g45
+I01
+g65
+tp231
+I103
+s(S'Has 2 positive verb'
+I00
+g21
+tp232
+I225
+s(S'Has 1 ADJP_0'
+I01
+g79
+tp233
+I430
+s(g162
+I0
+g79
+tp234
+I425
+s(S'Has 3 ADJP_1'
+I00
+g21
+tp235
+I216
+s(S'Has 2 NP_0'
+I00
+g20
+tp236
+I42
+s(g69
+I00
+g20
+tp237
+I62
+s(g182
+I00
+g21
+tp238
+I246
+s(S'Has 1 PP_-1'
+I00
+g19
+tp239
+I390
+s(S'negposhashtag'
+p240
+I01
+S'negative'
+tp241
+I299
+s(S'Has 1 ADVP_1'
+I00
+g20
+tp242
+I15
+s(S'Has 1 positive adjective'
+I01
+S'negative'
+p243
+tp244
+I265
+s(S'positivehashtag'
+p245
+I01
+S'negative'
+tp246
+I312
+s(g31
+I0
+g19
+tp247
+I369
+s(S'Has 1 positive verb'
+I00
+g191
+tp248
+I413
+s(g28
+I00
+g21
+tp249
+I166
+s(S'Has 1 NP_-1'
+I01
+S'neutral'
+p250
+tp251
+I114
+s(S'Has 3 ADJP_1'
+I00
+g20
+tp252
+I58
+s(S'Has 3 VP_1'
+I00
+g19
+tp253
+I393
+s(S'has negative Polar 2G'
+I01
+S'negative'
+tp254
+I296
+s(g42
+I01
+g63
+tp255
+I432
+s(S'Has 1 PP_1'
+I00
+g21
+tp256
+I210
+s(g142
+I0
+g19
+tp257
+I334
+s(S'Has 2 NP_1'
+I00
+g21
+tp258
+I199
+s(S'Has 2 VP_1'
+I00
+g20
+tp259
+I24
+s(S'Has 3 ADJP_-1'
+I00
+g19
+tp260
+I394
+s(S'Has 1 positive verb'
+I01
+g65
+tp261
+I104
+s(S'Has 1 hasIntensifier'
+I00
+g19
+tp262
+I382
+s(S'Has 1 VP_-1'
+I00
+g19
+tp263
+I365
+s(S'Has 2 PP_1'
+I00
+g20
+tp264
+I66
+s(S'Has 2 PP_0'
+I01
+g21
+tp265
+I204
+s(S'Has 2 NP_-1'
+I01
+S'negative'
+tp266
+I295
+s(S'Has 1 NP_-1'
+I00
+g20
+tp267
+I7
+s(S'Has 3 PP_0'
+I01
+g92
+tp268
+I267
+s(S'Has 3 ADJP_-1'
+I01
+g179
+tp269
+I310
+s(S'Has 1 positive smiley'
+I00
+g19
+tp270
+I331
+s(S'Has 3 negative adverb'
+I00
+g20
+tp271
+I76
+s(S'Has 0 netPosteriorPolarChunks'
+I01
+g20
+tp272
+I84
+s(S'Has 3 NP_-1'
+I01
+S'negative'
+p273
+tp274
+I277
+s(S'Has 3 NP_1'
+I01
+S'neutral'
+tp275
+I137
+s(S'Has 3 ADVP_1'
+I00
+g19
+tp276
+I386
+s(S'Has 2 NP_0'
+I01
+g250
+tp277
+I116
+s(S'Has 3 VP_1'
+I01
+g38
+tp278
+I474
+s(S'Has 2 VP_1'
+I00
+g21
+tp279
+I182
+s(g28
+I01
+S'negative'
+tp280
+I300
+s(S'Has 1 negative adjective'
+I01
+g273
+tp281
+I276
+s(S'Has 2 NP_1'
+I01
+S'neutral'
+tp282
+I143
+s(S'Has 2 PP_-1'
+I00
+g20
+tp283
+I70
+s(g182
+I01
+g43
+tp284
+I111
+s(S'Has 3 PP_1'
+I00
+g19
+tp285
+I324
+s(S'Has 2 ADJP_-1'
+I01
+S'positive'
+p286
+tp287
+I472
+s(S'Has 1 PP_0'
+I01
+g20
+tp288
+I51
+s(S'has negative Polar 2G'
+I01
+S'neutral'
+p289
+tp290
+I129
+s(S'Has 1 ADJP_0'
+I00
+g19
+tp291
+I403
+s(S'Has 2 negative adjective'
+I01
+g209
+tp292
+I293
+s(g42
+I01
+g112
+tp293
+I247
+s(S'Has 2 ADVP_1'
+I01
+g129
+tp294
+I147
+s(S'Has 2 ADVP_-1'
+I00
+g21
+tp295
+I245
+s(S'has positive Polar 2G'
+I00
+g20
+tp296
+I74
+s(S'Has 1 ADJP_1'
+I00
+g21
+tp297
+I207
+s(g81
+I01
+g19
+tp298
+I362
+s(S'Has 3 VP_0'
+I01
+S'negative'
+p299
+tp300
+I259
+s(S'Has 2 PP_0'
+I00
+g19
+tp301
+I368
+s(g71
+I0
+g21
+tp302
+I177
+s(S'Has 2 negative adverb'
+I00
+g20
+tp303
+I3
+s(g182
+I00
+g20
+tp304
+I88
+s(S'Has 3 positive verb'
+I00
+g20
+tp305
+I1
+s(S'Has 2 positive adjective'
+I00
+g19
+tp306
+I354
+s(S'Has 2 positive adverb'
+I01
+S'positive'
+tp307
+I483
+s(S'Has 2 negative adjective'
+I00
+g20
+tp308
+I48
+s(S'has neutral Polar 2G'
+I00
+g21
+tp309
+I193
+s(S'Has 1 hasIntensifier'
+I01
+S'negative'
+p310
+tp311
+I285
+s(S'has positive Polar 2G'
+I01
+S'positive'
+p312
+tp313
+I450
+s(S'Has 1 PP_0'
+I01
+g56
+tp314
+I261
+s(S'Has 3 negative verb'
+I01
+g103
+tp315
+I320
+s(S'has positive Polar 2G'
+I00
+g21
+tp316
+I232
+s(g122
+I01
+S'positive'
+p317
+tp318
+I467
+s(S'Has 3 NP_1'
+I00
+g21
+tp319
+I185
+s(S'Has 3 positive adverb'
+I00
+g20
+tp320
+I14
+s(S'Has 2 ADJP_-1'
+I00
+g19
+tp321
+I404
+s(S'Has 2 ADJP_1'
+I00
+g21
+tp322
+I179
+s(S'Has 2 NP_-1'
+I00
+g19
+tp323
+I405
+s(S'Has 2 ADVP_0'
+I00
+g20
+tp324
+I17
+s(g142
+I0
+g20
+tp325
+I12
+s(S'has neutral Polar 3G'
+I00
+g21
+tp326
+I213
+s(S'has negative Polar 3G'
+I00
+g20
+tp327
+I54
+s(g91
+I01
+g185
+tp328
+I91
+s(S'has positive Polar 3G'
+I01
+g63
+tp329
+I433
+s(S'Has 2 ADJP_0'
+I00
+g20
+tp330
+I63
+s(S'Has 2 ADVP_1'
+I00
+g19
+tp331
+I340
+s(g50
+I00
+g19
+tp332
+I399
+s(S'Has 3 NP_0'
+I00
+g250
+tp333
+I115
+s(S'Has 1 negative adverb'
+I01
+S'neutral'
+p334
+tp335
+I131
+s(S'Has 1 negative adjective'
+I00
+g20
+tp336
+I34
+s(S'Has 1 NP_0'
+I00
+g21
+tp337
+I214
+s(S'Has 1 ADVP_1'
+I01
+g312
+tp338
+I449
+s(S'Has 2 PP_1'
+I00
+g21
+tp339
+I224
+s(S'Has 1 NP_-1'
+I01
+g21
+tp340
+I165
+s(S'Has 3 positive adjective'
+I00
+g19
+tp341
+I400
+s(S'Has 1 PP_-1'
+I01
+S'negative'
+p342
+tp343
+I307
+s(S'Has 1 PP_1'
+I01
+S'positive'
+tp344
+I453
+s(S'Has 3 PP_-1'
+I00
+g21
+tp345
+I187
+s(S'Has 2 NP_1'
+I00
+g20
+tp346
+I41
+s(S'Has 3 PP_1'
+I00
+g20
+tp347
+I2
+s(S'Has -1 netPosteriorPolarChunks'
+I00
+g19
+tp348
+I397
+s(S'Has 1 ADJP_-1'
+I00
+g20
+tp349
+I45
+s(g69
+I01
+S'positive'
+tp350
+I487
+s(S'has positive Polar 2G'
+I00
+g19
+tp351
+I396
+s(g78
+I01
+g21
+tp352
+I197
+s(S'Has 3 ADVP_0'
+I00
+g21
+tp353
+I223
+s(S'Has 2 positive adjective'
+I01
+S'neutral'
+tp354
+I140
+s(S'has neutral Polar 2G'
+I00
+g20
+tp355
+I35
+s(S'Has 1 NP_1'
+I00
+g19
+tp356
+I379
+s(S'Has 2 negative adjective'
+I00
+g21
+tp357
+I206
+s(S'Has 1 ADJP_1'
+I01
+S'negative'
+tp358
+I291
+s(S'Has 2 negative verb'
+I01
+S'neutral'
+tp359
+I152
+s(S'Has 3 positive verb'
+I00
+g21
+tp360
+I159
+s(S'Has 2 ADVP_0'
+I00
+g19
+tp361
+I339
+s(S'Has 2 ADVP_-1'
+I01
+S'negative'
+tp362
+I316
+s(g245
+I01
+S'neutral'
+tp363
+I141
+s(S'Has 3 NP_-1'
+I00
+g21
+tp364
+I243
+s(S'Has 1 NP_1'
+I00
+g20
+tp365
+I57
+s(S'Has 1 positive adjective'
+I01
+g173
+tp366
+I125
+s(S'Has 2 positive adverb'
+I00
+g20
+tp367
+I5
+s(g240
+I01
+S'neutral'
+tp368
+I154
+s(S'Has 1 ADVP_0'
+I01
+g21
+tp369
+I174
+s(S'Has 2 NP_0'
+I00
+g21
+tp370
+I200
+s(S'Has 1 positive adjective'
+I00
+g21
+tp371
+I208
+s(S'Has 1 netPosteriorPolarChunks'
+I01
+g112
+tp372
+I256
+s(g45
+I01
+S'negative'
+tp373
+I319
+s(S'Has 1 PP_0'
+I00
+g21
+tp374
+I209
+s(S'Has 3 NP_0'
+I01
+g20
+tp375
+I26
+s(S'Has 1 ADJP_-1'
+I00
+g19
+tp376
+I367
+s(S'Has 1 negative smiley'
+I01
+S'positive'
+tp377
+I480
+s(S'Has 1 VP_1'
+I01
+g112
+tp378
+I251
+s(S'Has 1 negative adverb'
+I00
+g21
+tp379
+I169
+s(S'Has 3 VP_0'
+I00
+g21
+tp380
+I227
+s(S'Has 1 negative adjective'
+I01
+g43
+tp381
+I109
+s(S'Has 1 positive adjective'
+I00
+g20
+tp382
+I50
+s(S'Has 3 VP_-1'
+I01
+S'positive'
+p383
+tp384
+I476
+s(S'has negative Polar 3G'
+I01
+g137
+tp385
+I282
+s(g122
+I00
+g19
+tp386
+I332
+s(S'Has 1 VP_1'
+I00
+g191
+tp387
+I414
+s(S'Has 3 NP_1'
+I01
+S'negative'
+tp388
+I311
+s(S'Has 3 NP_-1'
+I01
+S'neutral'
+tp389
+I139
+s(S'Has 0 netPosteriorPolarChunks'
+I01
+S'negative'
+p390
+tp391
+I271
+s(g42
+I00
+g19
+tp392
+I322
+s(S'Has 1 negative verb'
+I01
+g36
+tp393
+I456
+s(S'Has 3 negative adverb'
+I00
+g21
+tp394
+I234
+s(S'Has 3 VP_-1'
+I00
+g21
+tp395
+I211
+s(S'Has 1 PP_-1'
+I01
+S'positive'
+tp396
+I486
+s(S'Has 1 ADVP_-1'
+I01
+g334
+tp397
+I132
+s(S'Has 3 PP_0'
+I00
+g20
+tp398
+I28
+s(S'Has 2 ADVP_0'
+I01
+S'negative'
+tp399
+I294
+s(S'has negative Polar 2G'
+I00
+g19
+tp400
+I358
+s(S'Has 1 ADVP_1'
+I01
+g25
+tp401
+I135
+s(S'Has 1 VP_1'
+I00
+g20
+tp402
+I38
+s(S'Has 3 PP_0'
+I01
+g185
+tp403
+I90
+s(S'Has 1 NP_-1'
+I00
+g112
+tp404
+I248
+s(S'Has 2 NP_-1'
+I01
+g185
+tp405
+I95
+s(S'Has 1 positive adverb'
+I00
+g19
+tp406
+I401
+s(S'Has 2 ADJP_1'
+I01
+g140
+tp407
+I317
+s(S'Has 2 ADVP_-1'
+I00
+g19
+tp408
+I409
+s(S'Has 2 VP_-1'
+I00
+g21
+tp409
+I244
+s(S'Has 3 ADVP_-1'
+I00
+g19
+tp410
+I344
+s(S'Has 1 ADVP_0'
+I00
+g20
+tp411
+I16
+s(g31
+I1
+g137
+tp412
+I281
+s(S'Has 1 ADVP_-1'
+I00
+g19
+tp413
+I342
+s(g50
+I01
+S'negative'
+tp414
+I303
+s(S'Has 1 positive verb'
+I01
+g19
+tp415
+I359
+s(S'Has 2 negative verb'
+I01
+g170
+tp416
+I297
+s(g42
+I00
+g20
+tp417
+I0
+s(S'Has 3 ADJP_0'
+I01
+S'negative'
+tp418
+I313
+s(S'Has 1 ADJP_-1'
+I01
+g243
+tp419
+I264
+s(S'Has 1 PP_0'
+I00
+g191
+tp420
+I418
+s(g122
+I01
+g25
+tp421
+I134
+s(S'Has 2 positive adjective'
+I00
+g20
+tp422
+I32
+s(g78
+I00
+g19
+tp423
+I361
+s(g162
+I1
+g21
+tp424
+I162
+s(S'Has 2 VP_1'
+I01
+S'neutral'
+p425
+tp426
+I150
+s(g152
+I01
+g310
+tp427
+I286
+s(S'Has 2 negative adverb'
+I00
+g19
+tp428
+I325
+s(S'Has 2 VP_-1'
+I01
+g59
+tp429
+I479
+s(S'Has 3 negative verb'
+I00
+g21
+tp430
+I188
+s(S'Has 1 ADVP_1'
+I00
+g21
+tp431
+I173
+s(S'Has 1 NP_0'
+I01
+S'negative'
+tp432
+I287
+s(S'Has 2 positive adverb'
+I00
+g19
+tp433
+I327
+s(S'has negative Polar 3G'
+I01
+S'positive'
+tp434
+I477
+s(g182
+I01
+g63
+tp435
+I437
+s(S'Has 2 positive verb'
+I00
+g20
+tp436
+I67
+s(S'Has 2 PP_-1'
+I00
+g19
+tp437
+I392
+s(S'Has 1 negative smiley'
+I00
+g21
+tp438
+I189
+s(S'Has 2 ADJP_-1'
+I00
+g21
+tp439
+I240
+s(S'Has 1 VP_0'
+I00
+g21
+tp440
+I191
+s(S'Has 3 ADVP_0'
+I01
+g286
+tp441
+I471
+s(S'Has 2 VP_1'
+I01
+g213
+tp442
+I451
+s(S'Has 3 NP_0'
+I01
+g21
+tp443
+I184
+s(S'Has 3 ADJP_0'
+I00
+g19
+tp444
+I381
+s(S'Has 1 netPosteriorPolarChunks'
+I00
+g20
+tp445
+I80
+s(S'Has 1 positive verb'
+I00
+g20
+tp446
+I37
+s(S'Has 1 negative verb'
+I00
+g21
+tp447
+I219
+s(S'Has 2 NP_1'
+I01
+g191
+tp448
+I415
+s(S'Has 1 NP_-1'
+I01
+S'positive'
+p449
+tp450
+I446
+s(S'Has 1 VP_0'
+I01
+g74
+tp451
+I99
+s(S'Has 1 negative adverb'
+I01
+g63
+tp452
+I434
+s(S'Has 3 PP_0'
+I00
+g19
+tp453
+I350
+s(g50
+I00
+g21
+tp454
+I235
+s(S'Has 3 NP_0'
+I00
+S'positive'
+p455
+tp456
+I443
+s(S'Has 2 positive verb'
+I01
+g177
+tp457
+I315
+s(g81
+I00
+g21
+tp458
+I198
+s(S'Has 2 NP_0'
+I01
+g455
+tp459
+I444
+s(S'Has 2 NP_-1'
+I00
+g20
+tp460
+I83
+s(g122
+I00
+g20
+tp461
+I10
+s(S'Has 3 positive adverb'
+I00
+g19
+tp462
+I336
+s(S'has neutral Polar 2G'
+I01
+g310
+tp463
+I284
+s(S'has negative Polar 2G'
+I00
+g20
+tp464
+I36
+s(S'Has 1 negative adjective'
+I00
+g19
+tp465
+I356
+s(g91
+I00
+g21
+tp466
+I202
+s(S'Has 1 positive smiley'
+I00
+g20
+tp467
+I9
+s(S'Has 3 ADVP_0'
+I01
+S'neutral'
+tp468
+I130
+s(S'Has 2 ADJP_0'
+I00
+g19
+tp469
+I385
+s(S'Has 1 positive smiley'
+I01
+g289
+tp470
+I128
+s(S'Has 1 NP_1'
+I01
+g455
+tp471
+I445
+s(S'has negative Polar 3G'
+I00
+g19
+tp472
+I376
+s(S'Has 1 ADVP_-1'
+I00
+g20
+tp473
+I20
+s(S'Has 1 VP_0'
+I01
+g19
+tp474
+I355
+s(S'Has 1 positive adverb'
+I01
+g390
+tp475
+I270
+s(S'Has 0 netPosteriorPolarChunks'
+I00
+g21
+tp476
+I242
+s(S'Has 2 VP_0'
+I01
+g21
+tp477
+I183
+s(S'Has 3 positive adverb'
+I00
+g21
+tp478
+I172
+s(S'has positive Polar 3G'
+I00
+g21
+tp479
+I164
+s(S'Has 3 ADJP_-1'
+I00
+g20
+tp480
+I72
+s(S'Has 1 netPosteriorPolarChunks'
+I00
+g79
+tp481
+I429
+s(S'Has 2 VP_0'
+I00
+g19
+tp482
+I347
+s(S'Has 3 ADJP_1'
+I00
+g19
+tp483
+I380
+s(g91
+I01
+g79
+tp484
+I428
+s(S'Has 3 ADJP_0'
+I00
+g20
+tp485
+I59
+s(S'Has 1 PP_-1'
+I00
+g21
+tp486
+I226
+s(g240
+I01
+g317
+tp487
+I468
+s(S'Has 1 positive adjective'
+I01
+g191
+tp488
+I417
+s(g31
+I0
+g21
+tp489
+I205
+s(S'Has 2 VP_-1'
+I01
+S'neutral'
+tp490
+I148
+s(S'Has 3 NP_0'
+I01
+g19
+tp491
+I348
+s(S'Has 2 positive verb'
+I00
+g19
+tp492
+I389
+s(S'Has 1 ADJP_0'
+I01
+g196
+tp493
+I274
+s(S'Has 3 VP_1'
+I00
+g21
+tp494
+I229
+s(g78
+I00
+g65
+tp495
+I106
+s(g182
+I00
+g19
+tp496
+I410
+s(S'has negative Polar 2G'
+I01
+S'positive'
+tp497
+I482
+s(g245
+I01
+S'positive'
+tp498
+I460
+s(S'Has 2 PP_0'
+I00
+g20
+tp499
+I46
+s(S'Has 1 PP_1'
+I00
+g19
+tp500
+I374
+s(S'Has 1 PP_-1'
+I00
+g20
+tp501
+I68
+s(S'Has 1 ADVP_0'
+I00
+g191
+tp502
+I411
+s(S'Has 2 ADVP_0'
+I01
+S'positive'
+tp503
+I442
+s(g28
+I00
+g19
+tp504
+I330
+s(S'Has 3 ADJP_-1'
+I00
+g21
+tp505
+I230
+s(S'Has 1 NP_0'
+I01
+S'positive'
+tp506
+I463
+s(S'Has 0 netPosteriorPolarChunks'
+I00
+g185
+tp507
+I96
+s(S'Has 3 ADVP_-1'
+I00
+g20
+tp508
+I22
+s(S'Has 1 VP_-1'
+I00
+g21
+tp509
+I201
+s(S'Has 2 ADJP_-1'
+I01
+S'neutral'
+tp510
+I157
+s(S'Has 2 NP_-1'
+I01
+S'positive'
+tp511
+I462
+s(g142
+I1
+g133
+tp512
+I438
+s(S'Has 3 PP_0'
+I01
+g67
+tp513
+I422
+s(S'Has 1 positive smiley'
+I00
+g21
+tp514
+I167
+s(S'Has -1 netPosteriorPolarChunks'
+I00
+g20
+tp515
+I75
+s(S'Has 2 NP_1'
+I00
+g19
+tp516
+I363
+s(S'has neutral Polar 2G'
+I01
+S'neutral'
+tp517
+I127
+s(g162
+I0
+g299
+tp518
+I257
+s(S'Has -1 netPosteriorPolarChunks'
+I01
+g185
+tp519
+I94
+s(S'Has 2 VP_0'
+I00
+g20
+tp520
+I25
+s(S'Has 3 ADVP_1'
+I00
+g20
+tp521
+I64
+s(g28
+I01
+g449
+tp522
+I447
+s(S'Has 1 hasIntensifier'
+I00
+g21
+tp523
+I218
+s(S'Has 1 hasIntensifier'
+I00
+g20
+tp524
+I60
+s(S'has positive Polar 3G'
+I01
+g342
+tp525
+I306
+s(S'Has 1 positive adverb'
+I00
+g20
+tp526
+I79
+s(S'Has 1 NP_0'
+I01
+S'neutral'
+tp527
+I126
+s(S'Has 2 PP_0'
+I01
+g191
+tp528
+I416
+s(S'Has 3 negative adjective'
+I00
+g21
+tp529
+I181
+s(S'Has 3 ADVP_1'
+I00
+g21
+tp530
+I222
+s(S'Has 1 PP_0'
+I00
+g185
+tp531
+I92
+s(S'Has 3 PP_0'
+I00
+g21
+tp532
+I186
+s(S'Has 2 negative verb'
+I00
+g20
+tp533
+I73
+s(S'Has 1 NP_1'
+I01
+g92
+tp534
+I269
+s(S'Has 0 netPosteriorPolarChunks'
+I01
+g79
+tp535
+I431
+s(S'Has 1 negative verb'
+I01
+g32
+tp536
+I121
+s(S'Has 2 ADJP_-1'
+I01
+S'negative'
+tp537
+I302
+s(S'Has 3 positive adjective'
+I00
+g20
+tp538
+I78
+s(g28
+I01
+S'neutral'
+tp539
+I144
+s(S'Has 1 ADJP_0'
+I00
+g21
+tp540
+I239
+s(S'Has 2 ADJP_0'
+I01
+S'negative'
+tp541
+I304
+s(S'Has 3 NP_-1'
+I01
+S'positive'
+tp542
+I481
+s(S'Has 1 negative adjective'
+I01
+g449
+tp543
+I448
+s(S'Has 2 positive adverb'
+I01
+g129
+tp544
+I145
+s(S'Has 2 VP_1'
+I00
+g19
+tp545
+I346
+s(S'Has 1 ADVP_0'
+I00
+g112
+tp546
+I250
+s(S'Has 1 ADJP_1'
+I00
+g19
+tp547
+I371
+s(S'Has 2 negative verb'
+I00
+g21
+tp548
+I231
+s(S'Has 1 positive adjective'
+I00
+g19
+tp549
+I372
+s(g142
+I1
+g273
+tp550
+I275
+s(S'Has 2 PP_0'
+I00
+g112
+tp551
+I253
+s(g71
+I0
+g19
+tp552
+I341
+s(S'Has 1 negative smiley'
+I01
+g32
+tp553
+I118
+s(S'Has 2 negative adjective'
+I01
+g286
+tp554
+I470
+s(S'has positive Polar 2G'
+I01
+S'neutral'
+tp555
+I149
+s(S'Has 2 ADVP_1'
+I01
+S'positive'
+tp556
+I484
+s(S'has neutral Polar 2G'
+I00
+g19
+tp557
+I357
+s(S'has positive Polar 2G'
+I01
+g243
+tp558
+I266
+s(g81
+I01
+g243
+tp559
+I263
+s(S'Has 1 PP_0'
+I01
+g19
+tp560
+I373
+s(S'Has 3 VP_0'
+I01
+g191
+tp561
+I419
+s(S'Has 3 negative verb'
+I01
+g383
+tp562
+I475
+s(S'Has -1 netPosteriorPolarChunks'
+I01
+g21
+tp563
+I233
+s(S'Has 2 VP_0'
+I00
+g299
+tp564
+I258
+s(g152
+I01
+S'neutral'
+tp565
+I133
+s(g69
+I01
+S'neutral'
+tp566
+I153
+s(g162
+I1
+g74
+tp567
+I97
+s(S'Has 2 positive adjective'
+I00
+g21
+tp568
+I190
+s(g122
+I01
+g21
+tp569
+I168
+s(S'Has 2 positive verb'
+I01
+g425
+tp570
+I151
+s(g162
+I0
+g20
+tp571
+I4
+s(S'Has 1 PP_1'
+I01
+S'neutral'
+tp572
+I156
+s(S'Has 2 ADJP_1'
+I00
+g19
+tp573
+I343
+s(S'Has 3 negative adjective'
+I00
+g19
+tp574
+I345
+s(S'Has 1 hasIntensifier'
+I01
+g133
+tp575
+I440
+ssS'_length'
+p576
+I489
+sS'_unseen'
+p577
+NsS'_alwayson'
+p578
+NsbsS'_weights'
+p579
+cnumpy.core.multiarray
+_reconstruct
+p580
+(cnumpy
+ndarray
+p581
+(I0
+tS'b'
+tRp582
+(I1
+(I490
+tcnumpy
+dtype
+p583
+(S'f8'
+I0
+I1
+tRp584
+(I3
+S'<'
+NNNI-1
+I-1
+I0
+tbI00
+S'b\x01k\x1f\xb7\xa7\x8c?\x11]\x06\xdd\x89\xc8a?-\xb0P\x075\xaf\x00?-\xf0\x1c@\xd8\x99M?}:\x9c\x12p\x1f\x9d?Z`\xa7\x81\xd079?l\xed<KD\xa7P\xbf?B\xe8\x89\x17M\x9e?\xcd#\nU\xec\x10H?\x89\x19\xdc\xe9.\x7f\xa5?\x05\xac\xc0\x86+\r\xa1?(\x9d\xc3K\xcb\xcc\x17\xbf\x1c\t\xc1\xa2\x81\x86z\xbfC\x0f\x99\x16IT\xa5\xbf-\xb0P\x075\xaf\x00?!>\xb7u\xcfx}\xbf\xcb\xf4d\xd7qi\xa3?\xe6\xbcK]\x1e>]\xbf\xc1\xcd\\\xe5\x87\xecL\xbf+0\xde\xaf\xbahU\xbf"Q\xdf\x93\x9b\x99u?V\xd5\x0b\xa2\x8b\\|?-\xb0P\x075\xaf\x00?F\x03\x94K\x9e\xdba?\xe9\xbc\xa02\x0e\xbdX?\x8b\xb4\xa8\xca\x0c\xee\x99?\x15\xb3v\x8bs\xb38?C\xb3\x1a\x11\x16\x97X?\xf795\xc2Fd\xa7\xbf-\xb0P\x075\xaf\x00?\x91\x92\xf9\xae\xe1\x87F?zw\x19Y*\xf7\x8a?\x99u\xdcD\xca\x1c\x8c?\x14n\x9aX@\x90\x98\xbfhf\xb6 i6\x80?v)\xc7_\xd6\xf5y?\xcfD\xed\xbd6Fa?\xc0\x92T\xf5g\xccs?sCf\xeab\x8e\x9b?\xa2\x13\xaa\'\xe8\x97\xc2?\x89M\x92\x9en\xd4\xa2?\xdd\x0e\x802\x82\xce\x80?\xa3\xae\x85B\xa9\x14y?<\xedzXky\x9c?\x1d\xa7k\xe6\xca\x99\xb4\xbf\x87)\xc7\x01\xba\x0f\x9e?\x91\xd3\xcc"\x90F\x93\xbf\xaf%d\xff\x84\x07\xb8?\x92\x14\xf7\xdb\xd4Rx?\x90\xb12\xafa\xa7\x9b?/s\xf8\x19\x04\xb0\xb0?h\x0c\xc3\x06fd\x98?G\x93<[\xd66?\xbf\x96\x88\x9em\x91^T?c\x8cB\x8b\xf7\x99v?-\xb0P\x075\xaf\x00?X\x8b\x18q*\xae`?4\xe4"\x8fT\xd0\x99?-\xb0P\x075\xaf\x00?\x80\x8a\x96N\xef\xa4g\xbf\xaf\xc8\xe0\xce\t\x90\x94?w\xbaq\x96\xd2\x16\xa2?\xb9\xec\rF\xa7oe?\xd5\x1a,\xbe\xea\xa6L?-\xb0P\x075\xaf\x00?\x0231\x9el\xf7t?-\xb0P\x075\xaf\x00?3|\xea\x1e\x9ehr?_\xebU\xaeaQn?M\x96\x9d\xe3\xe3u\xc3\xbf-\xb0P\x075\xaf\x00?N\xe0\xd0G\xbc\xbbO?\x0f\x02\xc6+\xbe\xd5J?s=\xfd{\x95\x8c\x80?\xb7\x8d2\x036\xbc\x8e?d\xa4\xd6\xd1\x88\xdc\xa3?-\xb0P\x075\xaf\x00?;\xb7\x066G\xb5s?9\x87\xd8F>fP?Fk/\xfah\xb2|?\xe6\x18Y\xba\x02\xd9\x86?\xdc\xf0\xdf\xd5=_G\xbf\xcc\x03\x1c)\x974^?oC\xcdh\xa8\xda:\xbf\xf7\xdb\x1a\\\x92\x00\xb3?r>\x0b\xb2\x80\xc5h?x4\xeaZ\xeetq?V\xca\x92N\xf3\xf4<?\xff\xefk\x16\x1b\xd5\x95\xbf\xf9\'\xaee\xca\\\xad\xbf\xa0\xe3")\x9e\xe3\xc2?Zh\xe2\x81B\x97\xd2?\x0f_\xb7`?\x8f\x85\xbf\xfb9M\xc6\xb0\x8e\xb5?6\x13\xd1\xfbx|\xc1\xbf\x96\x8c\xa8\xbc\x96k\x96?\x0fy\xcbP\xad\'\xb4\xbfO\xdd\xae~\x1bM\xa2\xbf\xbe\xdd\xa7\xb1\x03\xbf\xbf\xbfC\xc3\xdc%\xc3\xc5\xb1?Ee5\x89\xb4\x92\xbd\xbf\xcdth\xaa\xc8D\x9a\xbf\xeb\x87\xe9\xa3\xce\xaem?\x06\xfd\x8d\xad\xd3\xf9\xe2?\xd1 =\xbah\xd2\xa3\xbf\x82\xf2>\xc0Gf\xd3\xbf\x84Q\'j~*\xcf\xbf-\'\x96\xe4?\xb9\xc3\xbftI\xfa\xc9\x94\t\xb0\xbf1$\x8c]\xc6T\xab\xbf\x95Hu\x15\xd1%\xe3\xbf\x05\xe8\xb4\x9d>T\xe0?\xb6AKiv\xa6\xa4?\\\xad/\xa5\xf5A\xa8?\xcb|\xa1\xfb\xb0v\xc5\xbfn\xec1\xcdvne\xbf2\xaeS\xdbR\x0f\xb5\xbf \xf6\x97\x03\xad\xf0\xb0?$\xf0\xc4#$\xe1\x07\xc0\nu\xb7\x1d\xbcM\xd3\xbf\x16\xbbm\xd8\xf4\xbc\xde\xbf\xf9\xcf\xf1\xbc\xde(\xdd\xbf\x8b\x08\xa9\x84\xec]\xf2\xbf\xd3\xf3g8\x99\xd7\xa5\xbf4\x9b\xe1Z\xc6\x15\xe6\xbfh\xc4\xa1{\x11\xf6\xde\xbf\xff\xb7\x81\xf1\xfb\xcc\xb4\xbfq!\xc1\xab\xe1\x94\xd7\xbf\xbeu\x9e\xbbe\x0f\x02\xc0\xc4\x9b\xf33\xb6\xae\xc7\xbf\xca\xf9\xd6\xca$[\xe8\xbfDyM\xe0\xfcu\xb0?&\xa5"\x98\x0c\xc0\xf2\xbf\xf0\xc7\xcbc\xaa\x15\xca\xbfDd\x15!>\xbf\x04\xc0\x16}q\xacR\xb2\xe0?\xb4\xc6\xb4\xfe\xe3x\xd4\xbf\xb2h\xe0\x9e\xc0\xd2\xe1\xbf\x10\x16\xf0KX\xe6\xeb\xbf\xbd\x82\x9c\x94I\xa2\xf0\xbf\x8bDxS\x0cA\xf6\xbf^\x12G\x01,\x9b\xf3\xbf\x99\xbfx;\xd3\x05\xe8?<9,\xa2\xfa\x10\xde\xbf\xfe\xc8\x19\xfa\xcf~\xbd\xbf\xfd\x9c\x1b\x01\x05\xb7\xd2\xbf\x99~&\x97\xd9\x1d\xd0?!\x0b#7\xc6\xab\xef?\xf0K+\xd0\xc0\x11\xe1\xbf\xce\x1b\xbd{9\x0e\xfb\xbf0J\xc32\x8a3\xd0\xbfPm\xa9\xd5GH\xf0\xbf*\xd2\r%\xd7\x1f\xf4\xbfHR\xe4r\x8e\xd1\xf8\xbf\xb8\x0b\r\x9b\xc8\xe8\xb4?\x9f\x95\xb6R\x0e\x1b\xe6?\x13"G&B\x0b\xe0?v6\x86H\xffV\xf0\xbf/ \xbd\xda\xab\x8d\xb9\xbf\xc2\x98\x16\x8c\xdb\x13_?.\xbb|\xb3\x95\xcb\x03?\x82\x8f\x9e\xb6\x94\xa5[\xbf\x0c\x87X\x88\xb8!\xaf?\xd8\x853\x11h\'Q?\x9e\xc8\xa6j\x1b\xa4g?\xfe\x88t\xb4\xafn\xce?@\xfd\xe6\xd4\xccI4?_z\x7fyB\xe3\xa2?\xd7\xc8gv\x02\xc4\xe3?\x84P>>\xbc\xfaj?\xea\x06\xf5.\x89\xed\x94\xbf\x84\x83\xcf\xe8\xda\x0b\x99?.\xbb|\xb3\x95\xcb\x03?\xaf]\xe2\xa4\x8f"\x8a?\xb0\xdb\x00\x14lN\xb7?\x95\x82\x8b3gOi\xbfh\xe2I\x8a&\x0bA?\x86\xdbP!;\xcdZ?\xd4\xec\xd5\xbcyl\x85\xbfso>0a\x927?.\xbb|\xb3\x95\xcb\x03?jjH\xe0\xa1\xb5q\xbfo\x05\x1a)\x0b\x90\'\xbf\xe2\x92B\x8a\xc5-\x8d\xbf\x9b\xe1Q;\x8d\xcd\x8a?\xbb!\xf6\xd1\xcd\xd2D\xbfr\xfdB\x9a,\xa7\xa6?.\xbb|\xb3\x95\xcb\x03?*%O0gqC?u&cn\xc5o\x9a\xbf\xb1\xf1\xda\xb45\xa8\x80?\xa5\x89\xc8%F\xe4\xa6?;\xa2\xad\xf8`\xec\x95\xbf\xfa\x81\x83\x1e\x01nr\xbf\xa2|\x8a\xfa\xbdGs\xbf\x85\xfaC\rW\xe4\x89?\xec*Ai\x87\xf0y\xbf\x8cd\xb8n\x827\xb5\xbf\x91\xf1`PN<\xb0?\xc4\x94\x1a86^\x80?\xa9\xed(\xd4H\xe8}?*6dU9R\xa6\xbf\xea\x98IY\x88H\xa6?\x0f\xd7\x9a\xd5z\x10\xac\xbf\xad\x9d\xb7\xb9\xff,\xa3\xbf%\x7f\xccqt.\xbe?e\x89\xbf8<Q\x87\xbf~>\xf2z=\tm?\xb1\xfe\x93[]z\xa4?Xi_",\x11\x96?\xa1\x1e\xaa}4\xcd^?\xb8\xa1\xd6\xca\xb4\x06K\xbf\x8b\x08\x02" \xa2u\xbf.\xbb|\xb3\x95\xcb\x03?=\x92\x9d\x9eH\x88U\xbf\x01\xb8\xe9\xad\x9a\xdd\x8a?.\xbb|\xb3\x95\xcb\x03?\xb5+S\xa7\x8e\x12_?*\x1b\xc43\xa5\x93\x8b\xbf\x9d\xf6\xc1\xbdo\x0e\xad\xbfZ\xd3\x7f\xd9>Hu\xbf\r\xcc\x0c\xe7\x86IZ?.\xbb|\xb3\x95\xcb\x03?5\xc1A\x87\xfb\xa0|\xbf.\xbb|\xb3\x95\xcb\x03?\xa4~\xc30\x9f\xb6E\xbfxi\x92\xc9E\xd6h\xbf\x9a8\xa1@\x90\xb3\xc0\xbf.\xbb|\xb3\x95\xcb\x03?E\x08\xffi\xedXC?\'\x0f \xdc\x9b\xa1V\xbf\x1ez\x18A7\xb4\x8a\xbf\xae\xb9\x085\xb2\x06\x8d?\x81e\xed5\xf3\xc1\xc6?.\xbb|\xb3\x95\xcb\x03?\xe1F\x14\xfc\x06?N?7\xa7\x821M\xbcH?\xf1\xdd_\x83\xb2\xd7\x8a\xbf\xa3\xd5\x18M\xb6\xe1\xb3?v\xd4F\x01d\xb1\x8d?.\xa0\x14_\xba7i\xbf\xcb\xd6\xc37\x82\x03\x81\xbfIZ\xa9\x867\x15\xa1?W\xe0\x8cM"\x88s\xbfe\xbb\xd4\x1dk~\x81\xbf\xcb\xf9\xb7l9tD\xbf\xc2\xb9s\xc5O\x96\x9b?d\x174w\x14\xda\xc4?a\xd5\xd7}\x82\xd4\xb7\xbf\x9aS\xff\xb3p\xe6\xb0\xbf$\x081_=\x0e\xa1\xbf\xb3E\xddK\xa6)\xb4?\xa0\'">\x0c\xb6\xa8?\x1d~\x15\x82\xb9\xf8\x8c?\x1a}\x9f\xb57\xfa\xca?b3\xec9yn\xc6\xbf*\xc0\x1d\xabOa\xdb\xbfb\xf8M3\xa1c\xb1\xbf\xdd\xc6\xa3ap\xd8w?kB\x8d\xbb\x18{\xc2?\xe9\x9d\xe9W\x18<\xc4?\x88\x13\xdd\x1f\x91\x83\xa3\xbf\xc3\x8aP\t\xd4\x03\xc9\xbf\x82\xfa\x01\x9aP\x82\xda\xbf\x17\x88\x8a\xd2\x9e\t\xd1?\x95\xa4\xb0\x9b\xf1\x1e\xd2\xbf\x97BtZ\xd2\xaf\xeb\xbf\xc4g\xbb{\x93\xb1\xc9\xbf\x84\x9e2\xfb\xd5\x98\xe1\xbf*=\xf2\xe5\xa7\xad\xaf\xbf.\xaf/\x8f\xb6(\xde?t$IB\x8eQ\xb0\xbf\xca\xa1\xf8\xac\xc1\xe5\xc2\xbf\x06;\x1c\x8ez\x00\xbe\xbfo\xef\xf5\x18\xc1q\xb3\xbfrh\xc3\xd2e\xa6\xc7?\xac\x15+\xdfp\x02\xb5?r\x17\xdb\xb1\x97T\xda?\xb7e\x9b\xab\n#\xee?\xf5\xe81\xea0#\xdc?\x19\xc0\xdf\xa7\x08=\xc1\xbfS\x7f\x9bl\x90\x88\xe7\xbf\xf3\xdb\xe6\'q|\xe9?\x1a\x87>h\x9f\xee\xd7?\x95\xd9J\x07\xee?\xc8?\xc70\x012\xaeL\xc7?\xaf\x85\x1a\xcd\xf2!\xc3?\x8b\x01\xf5\xd1\x8b\x10\xb0?\x02\xa8\x95.\x8b<\xd6\xbf\xe5\xabc\x1dL\xf5\xe1\xbfd\x7f\xdf\xa6\x88<\xe8?Z\x12\xe3J\x92l\xa9\xbf\xabyU\xc9\xf1Q\xb6\xbf\x8c\x8e\x99\xa1\xdc*\xd5?P\x12\xbel\\Y\xa7?\x9b#\x94\x13>\xad\xcb?\x9d\x87\x05\xb5\x85,\xc4?_\xd1F\x13\xeck\xd6?\xe1L\r\x8e\x9dI\xcf?A\x1bQ\n^f\xc3?9j\x8e7\xa6\x17\x96\xbf6\xab\x03~\x7f\xef\xf3\xbf\x96\xa0\xf8x\xb3\xca\xd1?^MR\xc5\x1c6\xe6\xbf\x1ew\x95\xa6\xe6]\xb1\xbfq\xa33\xc2H\xbc\x00\xc0d3\xf55\xa5\x7f\xf0\xbf\xee\x8c\xd7,\x0c\x80\xfd?\x99K\xd55\xe2\xcb\xe1?\x87\xad5\xdd\x97 \xee?\xc5\x195\x95\x0b,\xe8?}<\xda\xa2\x94I\xd8?\x85\xf4\x89\x92>p\xd9\xbfkn\xa0\x03\x95\x9b\xe7\xbf#\xca\x17\xd0\xee\xeb\xbb?\xdc4\x9a\x9c\xe8\xca\xc4?f\x17\xba\x00\xb8\x9d\xe6?\x86\x05o\xae\xae\x0f\xb1?\xdb$\xb1\xdd?\xb9\xe8\xbf\x9a\xfb\xa6p\x82A\xf8\xbf\xd3\xde\x93eV\xb1\xdc\xbf\x9cz\xd9W\xaa\x8d\xdb?\xcb;\x90\xd6R\'\xac?_\xb1C$u\xb7p\xbf.\xbb`\x99U*\x12\xbf\x8f|\x06I\x10\x9bI?\xf5\x11.\xa3\x0eY\xa2\xbf*\x10\xf1\x85\xd5\x83W\xbf\x9d\x89s\\F\xd9^\xbfQ\xde\xcd\xf9&\x18\xa8?\x00`\xb6\xd2v Q\xbf\xaf"\x08\xc1\xdc\xf7\xb5\xbf\x80\xae\xccb\x0c\xfd\x9b?#\xbfg\xf9\x8d\x91i\xbf\x80\x03\x1e\xffx\x96\x9a?8_\xd5)s\xe7\x91?.\xbb`\x99U*\x12\xbf\x00\x95`\x0e5\x90w\xbfV\xd8\xddbG\xab\x91?$\x8f\xab{}\xcfs?4\xc6\xf3+i\xc17?!\x84\x9d\xccV\xb45\xbf\xbb\x17\xa6!\xb2lt?\xee\x9b\xd1\x8f\xd1%~\xbf.\xbb`\x99U*\x12\xbf\x1ft\xbc\xde\xc7ha?K\x93\x8a\xe3\xd6\xf7U\xbf\xf0\x1d\xe9\x81\xbd\x1b\xa0\xbfj\xca\xcb\xcb;\xc0\x8c\xbf\x0f\x18\xcaz\x04xL\xbfmMA\xfb\xb3m\\\xbf.\xbb`\x99U*\x12\xbf\xbc\xec\xff\xbd\x0f\xfdT\xbfS\xaa\x15\xc0"a\x88?\xe7\x14]\x03g\x86\x97\xbf[\x97\x0b*nP\xb3?\xe9\xeag[\xad\xf9\x86?RJ,d0\xc4^\xbf\xaat\xe9\xe5\x98\x87d?/\xec9r\xe54\xb7?Z\xf1\x7f\x8d\xe7h\xb9?%\xca\xd34\xe0\xbe\xb6?\xa2\x87\xdc\xfd\xbe\xf3\xc6?\xa0e\x96`fG\x91\xbf\xce\x9eWr\xe4,\x8c\xbf\x80\x030/=\x7f\x83?j\xe5\x03rp%\x99?\x9b\xfe\xcd\xe3u\xbf\x92?]\xfe\xa5L\xf2\x1dr?O\x0b\xc4\xe4\x8fF\xd1\xbf\x14\x8b\xb0f[\xedt?\x8a\xafc\xa9\xbew\xa1\xbf9\n\x0e\xf6c\x1c\xc2\xbf\xbc\xe2\xe3\x0b\xe7\x1d\x93?\xed\xa7\x18#l\tW\xbf\xfb\xf4)\t\xea\x87;\xbf\xa7*i\xdc\xdd\x7f1\xbf.\xbb`\x99U*\x12\xbf\'%@\xa3\x03\xa5G\xbf\xae\xdaq\x89#\x1e\xa7\xbf.\xbb`\x99U*\x12\xbfv\xceJ\xf9\xa7\'P?_\x0b6\x00\xcc\x0b\x7f\xbfU\x01\'\xc2\xc1J\x8a?\x83kgJ\xd3\xccd?B\xbe\x84\xed\x86Pd\xbf.\xbb`\x99U*\x12\xbf]\xa1.\xceF?]?.\xbb`\x99U*\x12\xbf\xf3\x13\xe4A\xca\xd5o\xbf\xfc\xff\xb5\x07V\x08F\xbf\xd8|\x18S\x92\x8a\x97?.\xbb`\x99U*\x12\xbfPt\xa9\xce\xf1\x94Y\xbf\x0e,\xf3\xad\xd0ZB?\x19S\xa3\xd6o\xb3r?\x02q\x87\x11\x8f\x82\x9f\xbf[\x15\x99\x01K\x0c\xb1?.\xbb`\x99U*\x12\xbfv\xcc\xd0\x0e\x93\x8cw\xbf\x19#r\xccN\xd0\\\xbf<\xdd\xb7\x03\x17+z?Wq\x8dd\xa9\x8b\xc2?\xc17\x0e\xb0^\xb3\x8c\xbf\x93\xe7\r\x82\xf6\xc0S?f?\x86_xY\x81?\xce\xd6\x1a\x83\xa4X\x99?\xf0\xe8Qc\x86\xe5[?\xfb\xa7Ep\x8d\x8fp?Q4\x9e\xf52\xdd\'?\xc6pT\xf68\xdbr\xbf\x11\x16\xab\xb8\xb5\x08z\xbf;\x0e=i\xc9%\x99\xbf\xda\x9b\x7f\xe7\'\xc3\x93\xbf\xa6\x1a\x88\xa8\xd2\xd4\x97\xbfMH:)\xef\xbb\xd2?\x8c\xdb\x8dC\xcc\xcd\x87\xbf7\x88>\xb5\x9cN\xd1?u\x0bM#\xddA\x84\xbfy\xdf\xc4~\x0eR\xa3\xbfj\x08d\x1e\xf3_\xb9\xbf\x81v\x95B\x98\xe5\xb1?%[\x1d3\x12\x05z?\t\x0eC\x16\xdd\xc3\xca?\xadS\xf8\xce\xd4\x0f\xd8??\xfe2\x13@U\x9e?Q\x11\x9a\xfb\x1cI\xc7\xbf3%\xed\x82G\xe5\xc4\xbf\xbc\xa0\xcc\xd6\xd9\x95\xd1\xbf\x94\xf7K\xe2"k\xc3\xbf\x14\xa6\xf8\x96\xfb\x08\xb1?\x19Z\xfb\x02\x13\xf7\xa7\xbf\r\'\x1eX\xbe\xd2\xe1\xbf1\xbb\x9f\xfe\x11\x7f\xc9?\xfa\xc2$\x93{?\xd1?\xe6\x98@\x9c\x8co\xf2\xbf\x9f3\xd8\xc2\x87f\xda\xbf\xeb\x17\x82\x13G\x06\xd3?\xcb_\xb5o\x04Z\xd8\xbfT,\xbb\x9cew\xe1?\xfe\'\x1f\xb7\x81y\xba?\x8e\xa9\xe4\xe0B\x93\xb2\xbf"\x1b\x96\x1b~U\xb8\xbfu\x161N\xf3[\xba?I\xf87\xd6\xf5\xae\xc2?\xbc\x13\x94\x95m\xfd\xba?\xe5d\xde5l\xff\xd6\xbf\xc8\xc5\xccr\xb9\xc6\xbc?\xca\x14\x89\x86\xd2\xb5\xb8\xbf\xa8\xb7\x0eHK\x8d\xc2?\xa20\xc9\x9c\xdc<\xdd?I_(/\xf1=\xb6?\x1a\xb4\xc9\xa2\xd6\x82\xca?\x1c\x19\x05g\xb8T\xe6?\xbbs\x17\x04\xce\xc9\xb4?\x99z\xaa2^\x06\xb7\xbfK\xba \xc6\x18\xa9\xc2\xbf\x94\xfe\xebz\x9c\xb1\xbb?\xf0\xc29\xdc>\xa8\xe9?]\x14\xf7\xafu\xce\xd5\xbf\xf5\xe4\xf7=V\'\xe5?\xf2H\xf4\xefA\xc7w\xbf\x9ex\xe9\x97\x81J\xf1\xbf\xb1\x02\xa0\x880\xc6\x96?U\x99\x9aPEP\xed?zok<z<\xe4?\xf4\xd0\\(\xc8\xdb\xfa?g\xa9\x18/\x96\x98\xf3\xbf\xf1\xb3\x00}\xdeI\xca\xbf\x1b_\xd3\xea\x95\x12\xbd?\xa9R{\x99\x80p\x00\xc0\xb1r\xfcw$\xbd\xd4\xbf\x95\x98pv\xcd\xbf\xe7\xbfQ\xdb\x00\xba\xd5\xa1\xf1?\xb6\x89\x92\xb8\xfe\xc0\xe9?y\xb0T\x1d\xe3\xdb\xf5?A\tt#\x1bJ\xd6?\xa6\xd8\xcb\xc9\x0b\xfc\xba?Yi\xb8\xfd\xc2\x0f\xe7\xbf\xb0o\xbb\xb9\x90\xec\xe7\xbf H-{\x0c\x1f\x07\xc0\xf2\xb0\xd5\xecb\x06\xe4\xbf\xbe\x83\xb1\x05\xc8-\xd1\xbfQc\x8a\x88\xa4+\xdd?\xb0)n\x04\x89\xbf\xd6\xbf^\x9c\xe5\xca1\x81\xdb\xbfG\xe9V\xc2\xb8E\xe3?\xe6\x82 \x03\x85\xdb\xf8\xbfK\xff;\xe7\x0b\x9b\xcf?\x99b\x9b\x1cV\xafm\xbf'
+tbsbsS'prdLabels'
+p585
+c__builtin__
+set
+p586
+((lp587
+S'positive'
+p588
+aS'neutral'
+p589
+aS'negative'
+p590
+atRp591
+sS'features'
+p592
+(lp593
+S'countPolarPOSFeature'
+p594
+aS'totalPolarityFeature'
+p595
+aS'netPOSPolarityURLFeature'
+p596
+aS'containsPolar2GFeature'
+p597
+aS'containsPolar3GFeature'
+p598
+aS'countPosteriorPolarChunksFeature'
+p599
+aS'netPosteriorPolarChunksFeature'
+p600
+aS'countSmileyFeature'
+p601
+aS'exclamationFeature'
+p602
+aS'dollarFeature'
+p603
+aS'periodFeature'
+p604
+aS'questionFeature'
+p605
+aS'txtContainsProfanityFeature'
+p606
+aS'positiveinterjectionFeature'
+p607
+aS'negativeinterjectionFeature'
+p608
+aS'hashtag_calcFeature'
+p609
+aS'hasIntensifierFeature'
+p610
+as.

@@ -1,0 +1,85 @@
+#===========================Project Header=============================
+#Process Name:categorical Cascading 
+#Description: Creates new variables under categorical cascading
+#Return type: completed Text
+#Created Date : 02-dec-2013
+#=======================================================================
+library(XML)
+library(stringr)
+
+#===========================Project Header=============================
+#Process Name:delimiterFunction 
+#Description: relaces delimiter text with appropriate values
+#Return type: vector
+#Created Date : 27-Aug-2012
+#Author : Arun Pillai
+#=======================================================================
+delimiterFunction = function(delimiter){
+  
+  # replacing s with \   and h with "-"
+  result= str_replace(string=delimiter,pattern="s","/")
+  result= str_replace(string=result,pattern="h","-")
+  result = strsplit(result,split="|",fixed=T)
+  return(result[[1]])
+}
+
+delimiter <- gsub(pattern="^\\|", replacement="", x=delimiter)
+delimterVector = delimiterFunction(delimiter=delimiter)
+
+# reading the XML
+xmldata<-xmlToDataFrame(input_xml_path)
+xmldata<-as.vector(xmldata)
+varlist<-do.call(paste,c(xmldata,sep="**"))
+
+#reading data 
+load(paste(input_path,"dataworking.RData",sep="/"))
+inputdata <- dataworking
+rm("dataworking")
+
+#splitting the var list
+variablelist<-unlist(strsplit(varlist,split="**",fixed=TRUE))
+#splitting the new var list
+newvariablelist<-unlist(strsplit(newvar_list,split=" ",fixed=TRUE))
+#assiging  temp variables 
+result<-NULL
+newvar<-NULL
+#looping through each variable 
+for(i in 1:length(variablelist))
+{
+  newvar<-NULL
+  tempvar<-unlist(strsplit(variablelist[i],split=" "))
+  
+  newvar<-as.data.frame(do.call(paste, c(inputdata[c(tempvar)], sep = str_trim(delimterVector[i]))))
+  if(i==1) {
+    result<-newvar
+  }
+  else{
+    result<-cbind(result,newvar)
+  }
+  
+}
+#writting csv
+names(result)<-newvariablelist
+dataworking <- cbind(inputdata,result)
+save(dataworking, file = paste(input_path,"dataworking.RData",sep="/"))
+
+
+#-------------------------------------------------------------------------------
+# 6000 check
+#-------------------------------------------------------------------------------
+if (nrow(result) > 6000) {
+  x_temp                       <- sample(x=nrow(result),
+                                         size=6000,
+                                         replace=FALSE)
+  result                       <- result[x_temp, , drop=FALSE]
+}
+#-------------------------------------------------------------------------------
+write.csv(result,paste(output_path,"categoricalCascading_viewPane.csv",sep="/"),row.names=FALSE,quote=F)
+
+#-------------------------------------------------------------------------------
+# update the dataset properties
+#-------------------------------------------------------------------------------
+source(paste(genericCode_path,"datasetprop_update.R",sep="/"))
+#-------------------------------------------------------------------------------
+
+write.table("CATEGORICAL_CASCADING_COMPLETED",paste(output_path,"CATEGORICAL_CASCADING_COMPLETED.txt",sep="/"),quote=F,row.names=F,col.names=F)

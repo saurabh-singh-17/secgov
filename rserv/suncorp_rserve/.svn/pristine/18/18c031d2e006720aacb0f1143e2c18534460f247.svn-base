@@ -1,0 +1,46 @@
+#------------------------------------------------------------------------------------------------------#
+#--                                                                                                  --#   
+#-- Project Name :  NumericalCategorical.R                                                           --#
+#-- Description  :  Categorizes the variable                      									 --#
+#-- Return type  :  Creates CSV's at a location according to given inputs                            --#
+#-- Author       :  Arun Pillai                                                                      --#                 
+#------------------------------------------------------------------------------------------------------#
+
+
+#varList=unlist(strsplit(var_names,split=" ",fixed=TRUE))
+varList=var_names
+load(paste(input_path,"/dataworking.RData",sep=""))
+inputData <- dataworking
+rm("dataworking")
+#inputData=read.csv(input_path)[varList]
+frequency=as.numeric(frequency_cutoff)
+
+freq=apply(as.matrix(varList),1,function(x){return(length(unique(inputData[,x])))})
+num_str=apply(as.matrix(varList),1,function(x){return(class(inputData[,x]))})
+category=rep("continuous",length(varList))
+indexDate=which(num_str=="factor")
+index1=which(num_str=="integer")
+num_str[index1]="numeric"
+index=which(freq <= frequency)
+if(length(indexDate) >=1)
+{
+  category[indexDate]="continuous"
+  num_str[indexDate]="date"
+}
+if(length(index)>=1)
+{
+  category[index]="categorical"
+}
+
+if((length(varList)==1)& (freq <= frequency))
+{
+  category="categorical"
+}
+
+var.class=cbind.data.frame(varList,freq,category,num_str)
+names(var.class)=c("name","freq","category","num_str")
+
+write.csv(var.class, file = paste(output_path, "categorical_reconfig.csv", sep="/"), quote=FALSE, row.names=FALSE)
+
+#completed.text
+write("MANUAL_CATEGORIZATION_COMPLETED", file = paste(output_path, "categorical_completed.txt", sep="/"))

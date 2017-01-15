@@ -1,0 +1,118 @@
+#------------------------------------------------------------------------------------------------------                                                                                                 --#   
+#-- Process Name : MRx_dataset_view                                                         
+#-- Description  : Generates sample csv based on the inputs for viewing the records
+#-- Return Type   :csv                                  
+#--  Author      : Arun Pillai                                                                              
+#------------------------------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# Parameters used
+#-------------------------------------------------------------------------------
+# input_path <- '/home/product//projects/Pg_Testfg-3-Feb-2014-09-56-28/1'
+# output_path <- '/home/product//projects/Pg_Testfg-3-Feb-2014-09-56-28/1/Eda/TimeSeries/TimeSeriesAdvance/Nbr_Veh/2'
+# dataset_name="dataworking";
+# type="all";
+# random="0";
+# start="1";
+# count="10";
+# varlist=c("channel_2","black_hispanic")
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# loading the dataset
+#-------------------------------------------------------------------------------
+load(file=paste(input_path,"/dataworking.RData",sep=""))
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# parameter play
+#-------------------------------------------------------------------------------
+# index of the required columns
+varIndex = match(x=varlist,table=names(dataworking))
+
+# nrow
+nRecords = nrow(dataworking)
+
+# changing all parameters to numeric
+count = as.numeric(count)
+start = as.numeric(start)
+random = as.numeric(random)
+
+if (random) {
+  count = random
+}
+end = start + count
+
+if(end > nRecords){
+  end = nRecords
+}
+
+if (count > nRecords) {
+  count = nRecords
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# error checks
+#-------------------------------------------------------------------------------
+# checking if there are records
+if (nRecords==0) {
+  msg = "There are no observations in the dataset"
+  stop(msg,call.=T)
+}
+
+# checking if all selected columns are present
+if (any(is.na(varIndex))) {
+  missingcols = paste(varlist[missingVar],collapse=",")
+  msg = paste("The column(s)",missingcols," is/are missing in the dataset",sep=" ")
+  stop(msg,call.=T)
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# subsetting only the required columns
+#-------------------------------------------------------------------------------
+dataworking = dataworking[varIndex]
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# getting the index
+#-------------------------------------------------------------------------------
+if (random) {
+  index = sample(x=nRecords, size=count, replace=F)
+  primary_key_1644 = seq(count)
+} else {
+  index = seq(from=start,to=end,by=1)
+  primary_key_1644 = index
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# subsetting only the required rows
+#-------------------------------------------------------------------------------
+output = dataworking[index,]
+output = cbind.data.frame(primary_key_1644,output)
+names(output)=c("primary_key_1644",varlist)
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# writing it in the output path
+#-------------------------------------------------------------------------------
+write.csv(output,paste(output_path,"datasetview.csv",sep="/"),row.names=FALSE,quote=FALSE)
+#-------------------------------------------------------------------------------

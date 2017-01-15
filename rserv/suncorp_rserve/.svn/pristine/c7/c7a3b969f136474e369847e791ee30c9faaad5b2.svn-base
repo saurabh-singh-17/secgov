@@ -1,0 +1,9 @@
+
+inputData=read.csv(paste(input_path,"\\dataworking.csv",sep=""))
+colnames<-colnames(inputData)
+library(sqldf)
+subsetted_data<-sqldf(paste("select * from inputData where",condition))
+
+
+write.csv(subsetted_data,paste(output_path,"\\",new_Dataset_name,".csv",sep=""),row.names = FALSE, quote=FALSE)
+

@@ -1,0 +1,139 @@
+#R-Code
+#last edited by saurabh singh
+
+perc_lower <- as.numeric(perc_lower)
+perc_upper <- as.numeric(perc_upper)
+
+load(paste(input_data,"/dataworking.RData",sep=""))
+data <- dataworking
+rm("dataworking")
+#data<-read.csv(paste(input_data,sep=""))
+if(grp_vars != ""){
+  
+  write(x=paste("grp_vars =",grp_vars),file="status.txt",ncolumns=1,append=T)
+  write(x=paste("grp_vars =",class(grp_vars)),file="status.txt",ncolumns=1,append=T)
+  newVar=data.frame(apply(data[grp_vars],1,function(x){paste(x,collapse="_")}))
+  data<-cbind(data,newVar)
+  colnames(data)[ncol(data)]<-"dummy"
+  unique_val<-unique(newVar)
+}else{
+  unique_val=NULL
+}
+
+if(is.null(unique_val)){
+  data$dummy<-0
+  unique_val<-as.data.frame(0)
+}
+
+subset.org <- subset(data, select=c(var_list, "dummy"))
+
+
+try(unlink(paste(output_path, "multiVar_detection.csv", sep="/")),silent=TRUE)
+perc_values <- c(0,.02,.04,.06,.08,.1,.2,.3,.4,.5,.25,.75,.95,.96,.97,.98,.99, .991, .992, .993, .994, .995, .996, .997, .998, .999, 1)
+output <- as.data.frame(NULL)
+perc <- as.data.frame(NULL)
+
+outputfinal=NULL
+percfinal=NULL
+
+for(j in 1:nrow(unique_val))
+{
+  subset<-as.data.frame(subset.org[c(which(subset.org$dummy == unique_val[j,1])),var_list])
+  colnames(subset)<-var_list
+  for (i in 1:length(var_list))
+  {
+    
+    output[i, "variable"] <- var_list[i]
+    
+    if (flag_missing == "true")
+    {
+      output[i, "missing_count"] <- length(which(is.na(subset[var_list[i]]))==T)
+      if (!is.null(missing_spl))
+      {
+        output[i, "missing_count"] <- output[i, "missing_count"] + length(which(subset[,var_list[i]] %in% missing_spl))
+      }
+      output[i, "missing_perc"] <- (output[i, "missing_count"]/nrow(subset))*100
+    }
+    
+    if (flag_outlier == "true")
+    {
+      if (outlier_type == "iqr")
+      {
+        if (outlier_side == "two")
+        {
+          output[i, "upper_cutoff"] <- quantile(as.numeric(subset[,var_list[i]]), 0.75, na.rm=TRUE) + (iqr_value * IQR(subset[,var_list[i]], na.rm=TRUE))
+          output[i, "lower_cutoff"] <- quantile(as.numeric(subset[,var_list[i]]), 0.25, na.rm=TRUE) - (iqr_value * IQR(subset[,var_list[i]], na.rm=TRUE))
+          output[i, "outlier_count"] <- length(which(subset[,var_list[i]] > output[i, "upper_cutoff"] | subset[,var_list[i]] < output[i, "lower_cutoff"]))
+        }
+        if (outlier_side == "one")
+        {
+          output[i, "upper_cutoff"] <- quantile(as.numeric(subset[,var_list[i]]), 0.75, na.rm=TRUE) + (iqr_value * IQR(subset[,var_list[i]], na.rm=TRUE))
+          output[i, "outlier_count"] <- length(which(subset[,var_list[i]] > output[i, "upper_cutoff"]))
+        }
+      }
+      if (outlier_type == "perc")
+      {
+        if (!is.null(perc_upper))
+        {
+          output[i, "upper_cutoff"] <- quantile(subset[,var_list[i]], perc_upper/100, na.rm=TRUE)
+        }
+        if (!is.null(perc_lower))
+        {
+          output[i, "lower_cutoff"] <- quantile(subset[,var_list[i]], perc_lower/100, na.rm=TRUE)
+        }
+        
+        if (!is.null(perc_upper) & !is.null(perc_lower))
+        {
+          output[i, "outlier_count"] <- length(which(subset[,var_list[i]] > output[i, "upper_cutoff"] | subset[,var_list[i]] < output[i, "lower_cutoff"]))
+        }
+        if (!is.null(perc_upper) & is.null(perc_lower))
+        {
+          output[i, "outlier_count"] <- length(which(subset[,var_list[i]] > output[i, "upper_cutoff"]))
+        }
+        if (is.null(perc_upper) & !is.null(perc_lower))
+        {
+          output[i, "outlier_count"] <- length(which(subset[,var_list[i]] < output[i, "lower_cutoff"]))
+        }
+      }
+      output[i, "outlier_perc"] <- (output[i, "outlier_count"]/nrow(subset))*100
+    }
+    
+    output[i, "mean"] <- mean(as.numeric(subset[,var_list[i]]), na.rm=TRUE)
+    output[i, "median"] <- median(as.numeric(subset[,var_list[i]]), na.rm=TRUE)
+    if(length(which.max(subset[,var_list[i]])) != 0)
+    {
+      output[i, "mode"] <- subset[,var_list[i]][which.max(subset[,var_list[i]])]
+    }else{output[i, "mode"]<-'NA'}
+    output[i,"grp_var"]<-unique_val[j,1]
+  }
+  output1<-output
+  
+  outputfinal<-rbind(outputfinal,output1)
+}
+for(k in 1:nrow(unique_val))
+{
+  subset<-as.data.frame(subset.org[c(which(subset.org$dummy == unique_val[k,1])),var_list])
+  colnames(subset)<-var_list
+  for (i in 1:length(var_list))
+  {
+    for (j in 1:length(perc_values))
+    {
+      perc[i,j] <- quantile(as.numeric(subset[,var_list[i]]), perc_values[j], na.rm=TRUE)
+    }
+    
+    colnames(perc) <- c('p_0','p_0_2','p_0_4','p_0_6','p_0_8','p_1','p_2','p_3','p_4','p_5','p_25','p_75','p_95','p_96','p_97','p_98','p_99','p_99_1','p_99_2','p_99_3','p_99_4','p_99_5','p_99_6','p_99_7','p_99_8','p_99_9','p_100') 
+  }
+  perc1<-perc
+  percfinal<-rbind(percfinal,perc1)
+  
+}
+output <- cbind(outputfinal, percfinal)
+if(exists('grp_vars')==FALSE){
+  output<-output[-c(which(colnames(output)=="grp_var"))]
+}
+
+write.csv(output, file = paste(output_path, "multiVar_detection.csv", sep="/"), quote=FALSE, row.names=FALSE)
+
+#completed.text
+write("MULTIVAR_DETECTION_COMPLETED", file = paste(output_path, "MULTIVAR_DETECTION_COMPLETED.txt", sep="/"))
+

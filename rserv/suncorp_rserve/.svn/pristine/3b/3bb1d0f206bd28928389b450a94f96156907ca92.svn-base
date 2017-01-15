@@ -1,0 +1,262 @@
+
+
+
+#-------------------------------------------------------------------------------
+
+# sample parameter
+#-------------------------------------------------------------------------------
+# input_path <- 'C:/Users/Tushar.Gupta/MRx/r/pg_crosstab-13-Jun-2014-09-07-52/1'
+# output_path <- 'C:/Users/Tushar.Gupta/MRx/r/pg_crosstab-13-Jun-2014-09-07-52/1/0/1_1_1/EDA/Crosstabs/1'
+# type <- 'count'
+# var_name <- ''
+# relriskcolumn <- '1'
+# pivot_vars <- c('channel_1')
+# selected_vars <- c('Store_Format')
+# flag_chisq_relation <- 'true'
+# pvalue_cutoff <- '0.05'
+# metric <- ''
+# weight_var <- ''
+# grp_no <- '0'
+# grp_flag <- '1_1_1'
+# 
+
+# parameter play 
+
+c_path_input  <- input_path
+c_path_output <- output_path
+c_var_x       <- selected_vars # x variable
+c_var_y       <- pivot_vars  # y variable
+c_var_agg     <- var_name         # variable to apply the aggregation function on
+n_grp         <- grp_no
+c_grp_flag    <- grp_flag
+# the aggregation function
+n_cutoff_p    <- pvalue_cutoff
+# b_chisq       <-               # chisq test?
+
+
+
+if (type == 'metric'){
+  c_fun_agg   <- metric
+} else {
+  if (weight_var == "") {
+    c_fun_agg <- "COUNT"
+    c_var_agg <- "primary_key_1644"
+  } else {
+    c_fun_agg <- "SUM"
+    c_var_agg <- weight_var
+  }
+}
+
+
+# converting parameters to R format
+if (c_fun_agg=="COUNT") {
+  murx_length <- function(x) {
+    return(length(x))
+  }
+  c_fun_agg <- "murx_length"
+}
+if (c_fun_agg=="MAX"){
+  murx_max <- function(x){
+    return(max(as.numeric(x),na.rm=TRUE))
+  }
+  c_fun_agg <- "murx_max"
+}
+
+if (c_fun_agg=="SUM") {
+  murx_sum <- function(x) {
+    return(sum(as.numeric(x), na.rm=TRUE))
+  }
+  c_fun_agg <- "murx_sum"
+}
+
+if(c_fun_agg=="RANGE"){
+  murx_range <- function(x) {
+    return(diff(range(as.numeric(x), na.rm=TRUE)))
+  }
+c_fun_agg <- "murx_range"
+}
+
+if (c_fun_agg == "AVG"){
+  murx_avg  <- function(x) {
+    return(mean(as.numeric(x), na.rm=TRUE))
+  }
+  c_fun_agg <- "murx_avg"
+}
+
+if (c_fun_agg =="STD"){
+  murx_std <-function(x){
+    return(sd(as.numeric(x),na.rm=TRUE))
+  }
+c_fun_agg <- "murx_std"
+}
+
+if(c_fun_agg =="VAR"){
+  murx_var <-function(x){
+    return(var(as.numeric(x),na.rm=TRUE))
+  }
+  c_fun_agg <- "murx_var"
+}
+
+#-------------------------------------------------------------------------------
+
+
+#-------------------------------------------------------------------------------
+# Libraries required
+#-------------------------------------------------------------------------------
+library(reshape)  # For rename()
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# Load the data
+#-------------------------------------------------------------------------------
+load(paste(c_path_input,"/dataworking.RData",sep=""))
+#-------------------------------------------------------------------------------
+subset<-T
+if (n_grp!=0){
+  subset<- dataworking[,paste("grp",grp_no,"_flag",sep="")] == c_grp_flag
+}
+dataworking <- subset(x=dataworking,subset=subset,select=c(c_var_x,c_var_y,c_var_agg))
+
+
+for (i in unique(c(c_var_x,c_var_y))) {
+  unique_data_x <- unique(dataworking[i])
+  write.csv(unique_data_x,file=paste(c_path_output,"/unique_",i,".csv",sep="")
+            ,row.names=FALSE,quote=FALSE)
+}
+
+#-------------------------------------------------------------------------------
+# crosstab : crosstab
+#-------------------------------------------------------------------------------
+for (c_tempy in c_var_y) {
+  
+  for (c_tempx in c_var_x) {
+    
+    dir.create(path=paste(c_path_output, "/", c_tempy, "/", c_tempx, sep=""),
+               recursive=T)
+    
+    # the base
+    df_base <- aggregate(x=dataworking[, c_var_agg],
+                         by=list(dataworking[, c_tempy], dataworking[, c_tempx]),
+                         FUN=c_fun_agg)
+    
+    df_base <- rename(x=df_base,
+                      replace=c(x="value",
+                                Group.1="y",
+                                Group.2="x"))
+    
+    
+    # sum of value : for calculating the absolute percentage
+    n_sum_value <- sum(as.numeric(df_base$value),na.rm=TRUE)
+    
+    # sum of value by x : for calculating the percentage by x
+    df_sum_value_by_x <- aggregate(x=df_base$value,
+                                   by=list(df_base$x),
+                                   FUN=function(x) sum(as.numeric(x)))
+    df_sum_value_by_x <- rename(x=df_sum_value_by_x,
+                                replace=c(x="sum_value_by_x",
+                                          Group.1="x"))
+    
+    # sum of value by y : for calculating the percentage by y
+    df_sum_value_by_y <- aggregate(x=df_base$value,
+                                   by=list(df_base$y),
+                                   FUN=function(x) sum(as.numeric(x)))
+    df_sum_value_by_y <- rename(x=df_sum_value_by_y,
+                                replace=c(x="sum_value_by_y",
+                                          Group.1="y"))
+    
+    # absolute percentage, percentage by x and percentage by y
+    n_pc_absolute <- (df_base$value / n_sum_value) * 100
+    n_index       <-  match(x=df_base$x, table=df_sum_value_by_x$x)
+    n_pc_by_x     <- (df_base$value / df_sum_value_by_x$sum_value_by_x[n_index]) * 100
+    n_index       <-  match(x=df_base$y, table=df_sum_value_by_y$y)
+    n_pc_by_y     <- (df_base$value / df_sum_value_by_y$sum_value_by_y[n_index]) * 100
+    
+    #cbind abs per, y per & x per to df_base
+    df_base       <- cbind.data.frame(df_base, n_pc_absolute, n_pc_by_x, n_pc_by_y)
+   
+    
+    # rbind sum_value_by_x to df_base
+    df_temp       <- rename(x=df_sum_value_by_x,
+                            replace=c(sum_value_by_x="value"))
+    df_temp$y     <- "total"
+    n_pc_absolute <- (df_temp$value / n_sum_value) * 100
+    n_pc_by_x     <- 0
+    n_pc_by_y     <- 0
+    df_temp       <- cbind.data.frame(df_temp, n_pc_absolute, n_pc_by_x, n_pc_by_y)
+    df_base       <- rbind.data.frame(df_base, df_temp)
+   
+    
+    # rbind sum_value_by_y to df_base
+    df_temp       <- rename(x=df_sum_value_by_y,
+                            replace=c(sum_value_by_y="value"))
+    df_temp$x     <- "total"
+    n_pc_absolute <- (df_temp$value / n_sum_value) * 100
+    n_pc_by_x     <- 'NA'
+    n_pc_by_y     <-'NA'
+    df_temp       <- cbind.data.frame(df_temp, n_pc_absolute, n_pc_by_x, n_pc_by_y)
+    df_base       <- rbind.data.frame(df_base, df_temp)
+    
+    
+    # rbind sum_value to df_base
+    df_temp       <- data.frame(x="total", y="total", value=n_sum_value,
+                                stringsAsFactors=FALSE)
+    if(any(is.na(df_base$n_pc_absolute)))
+    {
+      n_pc_absolute <- 0
+    }else{
+      n_pc_absolute <- 100
+    }
+    
+    n_pc_by_x     <- 'NA'
+    n_pc_by_y     <- 'NA'
+    df_temp       <- cbind.data.frame(df_temp, n_pc_absolute, n_pc_by_x, n_pc_by_y)
+    df_base       <- rbind.data.frame(df_base, df_temp)
+   
+    
+    
+    
+    
+    xtabs_crosstab <- xtabs(formula=value ~ x + y,
+                            data=df_base)
+    if (flag_chisq_relation=="true"){
+    summary_xtabs_crosstab <- summary(xtabs_crosstab)
+    
+    if (is.na(n_cutoff_p)) {
+      Result <- "NA"
+    } else {
+      Result <- ifelse(test=summary_xtabs_crosstab$p.value <= n_cutoff_p,
+                             yes="Significant",
+                             no="Insignificant")
+    }
+    
+    df_chisquare <- data.frame(Selected_var=c_tempx,
+                               Pivot_var=c_tempy,Statistic="Chi-Square",
+                               DF=summary_xtabs_crosstab$parameter,
+                               Value=summary_xtabs_crosstab$statistic,                              
+                               Probability=summary_xtabs_crosstab$p.value,
+                               Result)
+    # df_chisquare<-na.omit(df_chisquare)
+    write.csv(df_chisquare,
+              paste(c_path_output, "/", c_tempy, "/", c_tempx,
+                    "/chi_sq.csv", sep=""),
+              row.names=F,
+              quote=F)
+    }
+    
+    
+    colnames(df_base) <- c(c_tempy,c_tempx,"value","absolute","ColPercent","RowPercent")
+    df_base<- df_base[c(c_tempy,c_tempx,"value","ColPercent","RowPercent","absolute")]
+
+#     df_base<-na.omit(df_base)
+    write.csv(df_base,
+              paste(c_path_output, "/", c_tempy, "/", c_tempx, "/", c_tempx,
+                    ".csv", sep=""),
+              row.names=FALSE,
+              quote=F)
+   
+  }
+  
+}
+
+write("EDA-CROSSTABS",file=paste(c_path_output,"/CROSSTABS.txt",sep=""))
+#-------------------------------------------------------------------------------

@@ -1,0 +1,325 @@
+#---------------------------------------------------------------------------------------#
+#--                                                                                   --#
+#--  Project Name:   Text Mining                                                      --#
+#--  Task :          Task 1: Relationship Analysis                               	  --#
+#--  Sub-Task:       1.1 Create frequency reports                                     --#
+#--  Sub-Task:       1.2 Create word association reports                              --#
+#--  version :       1.0 date: 15/03/2012 author: Gaurav Jain		          		  --#
+#---------------------------------------------------------------------------------------#
+
+
+# Defining some custom functions
+# 1. To install required packages
+# 2. To split text into tokens based on whitespaces
+# 3. To Extract parts of speech
+#---------------------------------------------------------------------------------------
+
+
+is.installed <- function(pkg){ is.element(pkg, installed.packages()[,1])}
+
+strsplit_space_tokenizer <- function(x) unlist(strsplit(x, "[[:space:]]+"))
+
+
+
+
+posTagger <- function(filePath, fileName, varName,
+                      extractVerbs = TRUE,
+                      extractNouns = TRUE,
+                      extractAdjectives = TRUE) {
+
+
+if(!is.installed('RTextTools')){
+  install.packages('RTextTools',repo="http://lib.stat.cmu.edu/R/CRAN")
+  library('RTextTools')
+}
+if(!is.installed('openNLP')){
+  install.packages('openNLP',repo="http://lib.stat.cmu.edu/R/CRAN")
+  library('openNLP')
+}
+if(!is.installed('openNLPmodels.en')){
+  install.packages('openNLPmodels.en',repo="http://lib.stat.cmu.edu/R/CRAN")
+  library('openNLPmodels.en')
+}
+
+  require('RTextTools')
+  require('openNLP')
+  require('openNLPmodels.en')
+
+  # To read data from a single csv file and create a dataset of required column
+  #----------------------------------------------------------------------------
+
+  fileLoc <- paste(filePath,fileName,sep="\\")
+
+  tmDataSet <- read_data(fileLoc,type="csv")
+  dataSize <- nrow(tmDataSet)
+
+  varIndex <- which(colnames(tmDataSet)==varName)
+
+  dataList <- as.vector(tmDataSet[,varIndex])
+
+  # To remove punctuations from dataset
+  #----------------------------------------------------------------------------
+
+  dataList <- removePunctuation(dataList, preserve_intra_word_dashes = FALSE)
+
+  # POS-tag the dataset
+  #----------------------------------------------------------------------------
+
+  dataList <- tagPOS(dataList, language = "en")
+
+  nounPOS = c()
+  verbPOS = c()
+  adjPOS = c()
+
+  # Extracting nouns, verbs and adjectives from the tagged data
+  #----------------------------------------------------------------------------
+
+  for(i in 1:length(dataList)) {
+
+    wordlist <- unlist(strsplit(dataList[i], " ", fixed=TRUE))
+    splitVars <- sapply(wordlist, function(str){strsplit(str, "/", fixed=TRUE)},
+                        simplify = TRUE, USE.NAMES = FALSE)
+
+    splitMat <- as.data.frame(t(data.frame(splitVars)))
+
+    words = as.character(splitMat$V1)
+    postags = as.vector(splitMat$V2)
+
+    noun = ""
+    verb = ""
+    adj = ""
+
+    for(j in 1:length(words)) {
+
+      tag2 = substr(postags[j],1,2)
+	if(length(tag2)==0){
+	print(tag2)
+	
+	}
+	else{
+
+      if(tag2 == 'NN') {
+        noun = paste(noun,words[j],sep=" ")
+      }
+
+      if(tag2 == 'VB') {
+        verb = paste(verb,words[j],sep=" ")
+      }
+
+      if(tag2 == 'JJ') {
+        adj = paste(adj,words[j],sep=" ")
+      }
+
+		}
+}
+
+    nounPOS = c(nounPOS,noun)
+    verbPOS = c(verbPOS,verb)
+    adjPOS = c(adjPOS,adj)
+
+  }
+
+  verbPOS = tolower(verbPOS)
+  nounPOS = tolower(nounPOS)
+  adjPOS = tolower(adjPOS)
+
+  tmDataSetNew <- cbind(tmDataSet)
+
+  # Adding POS entity data to the original dataset
+  #----------------------------------------------------------------------------
+
+  if(extractVerbs) {
+    tmDataSetNew <- cbind(tmDataSetNew,verbPOS)
+  }
+
+  if(extractNouns) {
+    tmDataSetNew <- cbind(tmDataSetNew,nounPOS)
+  }
+
+  if(extractAdjectives) {
+    tmDataSetNew <- cbind(tmDataSetNew,adjPOS)
+  }
+
+  return(tmDataSetNew)
+}
+
+
+
+
+genFreqReports <- function(filePath, fileName, varName,
+                         ifEntireComment = TRUE, ifNounVerbAdj = FALSE,
+                         ifVerbs = FALSE, ifNouns = FALSE, ifAdj = FALSE,
+                         ifNounVerb = FALSE, ifNounAdj = FALSE, ifVerbAdj = FALSE,
+                         reportLoc) {
+
+if(!is.installed('RTextTools')){
+  install.packages('RTextTools',repo="http://lib.stat.cmu.edu/R/CRAN")
+  library('RTextTools')
+}
+
+if(!is.installed('stringr')){
+  install.packages('stringr',repo="http://lib.stat.cmu.edu/R/CRAN")
+  library('stringr')
+}
+
+  require('stringr')
+
+  # To read data from a csv file and create a dataset from required column(s)
+  #---------------------------------------------------------------------------------
+
+  #fileLoc <- paste(filePath,fileName,sep="/")
+  
+  tmDataSet<-posTagger(filePath, fileName, varName,
+                      extractVerbs = TRUE,
+                      extractNouns = TRUE,
+                      extractAdjectives = TRUE)
+
+  #tmDataSet <- read_data(fileLoc,type="csv")
+  corpus = ""
+
+  varIndexE <- which(colnames(tmDataSet)==varName)
+  varIndexN <- which(colnames(tmDataSet)=='nounPOS')
+  varIndexV <- which(colnames(tmDataSet)=='verbPOS')
+  varIndexA <- which(colnames(tmDataSet)=='adjPOS')
+
+  if(ifEntireComment) {
+      corpus <- tolower(tmDataSet[,varIndexE])
+  } else if(ifNouns) {
+      corpus <- tolower(tmDataSet[,varIndexN])
+	  
+  } else if(ifVerbs) {
+      corpus <- tolower(tmDataSet[,varIndexV])
+  } else if(ifAdj) {
+      corpus <- tolower(tmDataSet[,varIndexA])
+  } else if(ifNounVerb) {
+      corpus <- paste(tolower(tmDataSet[,varIndexN]),tolower(tmDataSet[,varIndexV]),sep=" ")
+  } else if(ifNounAdj) {
+      corpus <- paste(tolower(tmDataSet[,varIndexN]),tolower(tmDataSet[,varIndexA]),sep=" ")
+  } else if(ifVerbAdj) {
+      corpus <- paste(tolower(tmDataSet[,varIndexV]),tolower(tmDataSet[,varIndexA]),sep=" ")
+  } else if(ifNounVerbAdj) {
+      corpus <- paste(tolower(tmDataSet[,varIndexN]),tolower(tmDataSet[,varIndexV]),tolower(tmDataSet[,varIndexA]),sep=" ")
+  }
+
+  # To convert dataset into Plain text document
+  #----------------------------------------------------------------------------
+
+  doc <- PlainTextDocument(corpus)
+
+  # To remove punctuations from dataset
+  #----------------------------------------------------------------------------
+
+  doc <- removePunctuation(doc, preserve_intra_word_dashes = TRUE)
+  doc<- str_replace_all(doc, "[^[:alnum:]]", " ")
+
+  # To remove leading and trailing whitespaces
+  #----------------------------------------------------------------------------
+
+  doc = sub("^[[:space:]]*(.*?)[[:space:]]*$", "\\1", doc, perl=TRUE)
+
+  # Frequency calculation and sorting data based on count in descending order
+  # -------------------------------------------------------------------------
+
+  freqList <- termFreq(doc,
+              control = list(tokenize = strsplit_space_tokenizer,
+                             wordLengths = c(3, Inf)))
+
+  word = names(freqList)
+  freq <- as.numeric(freqList)
+
+  ap.d <- data.frame(word,freq)
+
+  ap.d.sorted <- ap.d[order(-freq,word),]
+
+  # To write the frequency report in a csv
+  #----------------------------------------------------------------------------
+
+  write.csv(ap.d.sorted, file = reportLoc, append = FALSE, col.names = TRUE,
+            row.names = FALSE)
+
+  # To clear all variable used
+  #----------------------------------------------------------------------------
+
+  rm(list=c("filePath","fileName","fileLoc","varName","corpus","doc","freq","word",
+            "freqList","reportLoc","varIndexA","varIndexE","varIndexN","varIndexV",
+            "ap.d","ap.d.sorted","tmDataSet","strsplit_space_tokenizer"))
+
+}
+
+
+genWordAssocReports <- function(filePath, fileName, varName, keyword, reportLoc) {
+
+  require('RTextTools')
+  require('stringr')
+
+  # To read data from a csv file and create a dataset from required column(s)
+  #---------------------------------------------------------------------------------
+
+  fileLoc <- paste(filePath,fileName,sep="/")
+
+  tmDataSet <- read_data(fileLoc,type="csv")
+
+  varIndex <- which(colnames(tmDataSet)==varName)
+
+  corpus <- tolower(tmDataSet[,varIndex])
+  
+  str_replace_all(corpus, "[^[:alnum:]]", " ")
+  
+  
+  
+  
+  
+  
+
+  # To create a document term matrix from the dataset
+  #----------------------------------------------------------------------------
+
+  dtmatrix <- create_matrix(corpus,language="english",
+                        minWordLength = 3,minDocFreq = 1,ngramLength = 0,
+                        removeNumbers = FALSE,stemWords = FALSE,
+                        removePunctuation = FALSE,stripWhitespace = FALSE,
+                        toLower = TRUE,removeStopwords = FALSE,
+                        weighting = weightTf)
+
+  # To find associations for a given keyword and sort the results in descending order of scores
+  #--------------------------------------------------------------------------------------------
+
+  associationList <- findAssocs(dtmatrix, keyword, 0.0)
+
+  word = names(associationList)
+  assocScore <- as.numeric(associationList)
+
+  ap.d <- data.frame(word,assocScore)
+
+  ap.d.sorted <- ap.d[order(-assocScore,word),]
+
+  # To remove the analyzed keyword from the association list
+  #---------------------------------------------------------
+
+  if(ap.d.sorted$word[1]==keyword) {
+    ap.d.sorted = ap.d.sorted[2:nrow(ap.d.sorted),]
+  }
+
+  # To write the frequency report in a csv
+  #----------------------------------------------------------------------------
+  reportLoc=strsplit(reportLoc,split="\\realtion.csv",fixed=T)	
+  reportLoc <- paste(reportLoc, "\\",sep="")
+  
+  if(!file.exists(reportLoc)){
+   dir.create(reportLoc)
+   }
+
+   reportLoc<-paste(reportLoc,"realtion.csv",sep="")
+
+
+  write.csv(ap.d.sorted, file = reportLoc, append = FALSE, col.names = TRUE,
+            row.names = FALSE)
+
+  # To clear all variable used
+  #----------------------------------------------------------------------------
+
+  rm(list=c("filePath","fileName","fileLoc","varName","corpus","word",
+            "reportLoc","varIndex","assocScore","associationList",
+            "ap.d","ap.d.sorted","tmDataSet","dtmatrix","keyword"))
+
+}

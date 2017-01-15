@@ -1,0 +1,36 @@
+
+.libPaths('/home/LimitedUser/R/x86_64-unknown-linux-gnu-library/2.14')
+
+write(x=loginDetails,file=logFile,ncolumns=1,append=T)
+write(x=parameter,file=logFile,ncolumns=1,append=T)
+
+write(x=currentTime,file=logFile,ncolumns=1,append=T)
+resultString = "success"
+
+currentTime = paste(Sys.time(),getwd(),": INFO R Code started")
+write(x=currentTime,file=logFile,ncolumns=1,append=T)
+
+
+res=try({codes<-unlist(strsplit(codeFile,"|",fixed=T));apply(data.frame(codes),1,source)},silent=T)
+if(class(res)=="try-error")
+{
+  resultString="error"
+  errorMessage = res[[1]]
+  errorMsg = gsub(pattern="\n",replacement="",x=errorMessage)
+  errorMsg = strsplit(x=errorMsg,split=":",fixed=T)[[1]][2]
+  resultString = paste("error*",errorMsg,sep="")
+  currentTime = paste(Sys.time(),getwd(),": ERROR ",errorMessage)
+  write(x=currentTime,file=logFile,ncolumns=1,append=T)
+  currentTime = paste(Sys.time(),getwd(),": INFO R code ends")
+  write(x=currentTime,file=logFile,ncolumns=1,append=T)
+}else
+{
+  
+  currentTime = paste(Sys.time(),getwd(),": R Code SUCCESS")
+  write(x=currentTime,file=logFile,ncolumns=1,append=T)
+  currentTime = paste(Sys.time(),getwd(),": INFO R Code completed")
+  write(x=currentTime,file=logFile,ncolumns=1,append=T)
+  resultString = "success"
+}
+
+

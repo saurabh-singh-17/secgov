@@ -1,0 +1,178 @@
+#------------------------------------------------------------------------------------------------------#
+#--                                                                                                  --#   
+#-- Project Name :  MRx_AdstockVariable                                                          --#
+#-- Description  :  Contains some functions to enable Adstock variable creation in MRx                      --#
+#-- Return type  :  Creates CSV's at a location according to given inputs                            --#
+#-- Author       :  Tauseef Ahmad and shankar jha 
+#-- Modified by  :  saurabh vikash singh
+#------------------------------------------------------------------------------------------------------#
+
+
+#Parameters required
+#-----------------------------------------------------------------
+#input_path="C:/MRx/test-12-Sep-2012-16-59-16/1"
+#output_path="C:/MRx/test-12-Sep-2012-16-59-16/1/0/1_1_1/NewVariable/AdstockVariable/1"
+#new_varname=""
+#mode="check"
+#eqn_type="simple"
+#var_name="ACV"
+#decay_rate="0!!0.5!!1"
+#learning_rate=""
+#date_variable="Date"
+#dependent_variable="ACV"
+#selected_vars=""
+
+
+#Libraries required
+#-----------------------------------------------------------------
+
+
+
+#Reading the dataworking.csv  
+#-----------------------------------------------------------------
+# dataworking=read.csv(paste(input_path,"/dataworking.csv",sep=""),header=T)
+load(paste(input_path,"/dataworking.RData",sep=""))
+
+if (file.exists(file=paste(output_path,"/error.txt",sep="")))
+{
+  unlink(paste(output_path,"/error.txt",sep=""),recursive = FALSE, force = FALSE)
+}
+
+#Two functions defin to enable Adstock functionality in MRx 
+#-----------------------------------------------------------------
+
+adstockCheckTransformCreate=function(var_name,decay_rate,eqn_type,dependent_variable)
+  
+{
+  
+  var.index=which(colnames(dataworking)==var_name)
+  dep.index=which(colnames(dataworking)==dependent_variable)
+  date.index=which(colnames(dataworking)==date_variable)
+  decay_rate_vector=as.numeric(unlist(strsplit(x=decay_rate,split="!!",fixed=T)))
+  corr=NULL
+  adStockDF=NULL
+  if(eqn_type=="simple")
+  {
+    
+    
+    for(i in 1:length(decay_rate_vector)){
+      newVar<-dataworking[,var.index]
+      newVar[c(which(is.na(newVar) == "TRUE"))]<-0
+      newVar<-Reduce(function(x,y){y+x*decay_rate_vector[i]},newVar,accumulate=TRUE)
+      corr[i]=cor(dataworking[,dep.index],newVar)
+      adStockDF=as.data.frame(cbind(adStockDF,newVar))
+      dataworking[which(is.na(dataworking[,dep.index])),dep.index]<-0
+      dataworking[which(is.na(dataworking[,var.index])),var.index]<-0
+      colnames(adStockDF)[i]=paste("ads_",var_name,"_",as.character(decay_rate_vector[i]),sep="")
+      colnames(adStockDF)<-gsub(".","_",colnames(adStockDF),fixed=TRUE)
+    }
+    corr_dep=cbind(cor(dataworking[,dep.index],dataworking[,var.index],use = "everything",method = c("pearson", "kendall", "spearman")))
+  }
+  
+  if(eqn_type=="log")
+  {
+    corr=NULL
+    adStockDF=NULL
+    for(i in 1:length(decay_rate_vector))
+    {
+      newVar<-log1p(dataworking[,var.index])
+      newVar[c(which(is.na(newVar) == "TRUE"))]<-0
+      newVar<-Reduce(function(x,y){y+x*decay_rate_vector[i]},newVar,accumulate=TRUE)
+      corr[i]=cor(dataworking[,dep.index],newVar)
+      adStockDF=as.data.frame(cbind(adStockDF,newVar))
+      colnames(adStockDF)[i]=paste("adl_",var_name,"_",as.character(decay_rate_vector[i]),sep="")
+      
+    }
+    colnames(adStockDF)<-gsub(".","_",colnames(adStockDF),fixed=TRUE)
+    dataworking[which(is.na(dataworking[,dep.index])),dep.index]<-0
+    dataworking[which(is.na(dataworking[,var.index])),var.index]<-0
+    corr_dep=cbind(cor(log1p(dataworking[,dep.index]),log1p(dataworking[,var.index])))
+  }
+  #correlation with dependent variable  
+  
+  
+  corrDF=as.data.frame(cbind(c(dependent_variable,colnames(adStockDF)),c(1,corr),c("",as.character(decay_rate_vector))))
+  tempDf <- data.frame(var_name,as.character(corr_dep)," ")
+  names(tempDf) <- names(corrDF)
+  
+  #tresult to bind the corr for dep
+  resultDF<-rbind(corrDF,tempDf)
+  
+  newvarDF=as.data.frame(cbind(dataworking[,var.index],dataworking[,dep.index],dataworking[,date.index],adStockDF))
+  colnames(resultDF)=c("actual_name","correlation","decay")
+  colnames(newvarDF)[1:3]=c(var_name,dependent_variable,date_variable)
+  newvarDF<-newvarDF[,unique(colnames(newvarDF))]
+  # Removing the dependent variable from the below 2 CSVs
+  index    <- which(as.character(resultDF$actual_name) %in% dependent_variable)
+  resultDF <- resultDF[-index,]
+  index    <- which(colnames(newvarDF) %in% dependent_variable)
+  newvarDF <- newvarDF[,-index]
+  
+  write.csv(resultDF,paste(output_path,"/correlation_table.csv",sep=""),row.names=F,quote=F)
+  
+  #-------------------------------------------------------------------------------
+  # 6000 check
+  #-------------------------------------------------------------------------------
+  if (nrow(newvarDF) > 6000) {
+    x_temp                       <- sample(x=nrow(newvarDF),
+                                           size=6000,
+                                           replace=FALSE)
+    newvarDF                    <- newvarDF[x_temp, , drop=FALSE]
+  }
+  #-------------------------------------------------------------------------------
+  
+  write.csv(newvarDF,paste(output_path,"/adstockVarCreation_viewPane.csv",sep=""),row.names=F,quote=F)
+  
+  
+  
+  
+  
+  if(mode=="confirm")
+  {
+    #index=which(selected_vars %in% colnames(dataworking))
+    #if(length(index)){
+    #selected_vars=selected_vars[-index]
+    #}
+    #indexToAdd=which(colnames(adStockDF) %in% selected_vars)
+    colNames=colnames(dataworking)
+    
+    colNames=c(colNames,names(adStockDF))
+    dataworking=as.data.frame(cbind(dataworking,adStockDF))
+    colnames(dataworking)=colNames
+    write.csv(dataworking,paste(input_path,"/dataworking.csv",sep=""),row.names=F,quote=F)
+    save(dataworking,file=paste(input_path,"/dataworking.RData",sep=""))
+    #loadcmp(paste(genericCode_path,"datasetprop_update.Rc",sep="/"))
+    write(x="New Variable Created",file=paste(output_path,"/New Variable Created.txt",sep=""))
+  }     
+  
+}
+
+error <- 0
+if(eqn_type=="log"){
+  if(length(which(dataworking[,var_name] <= 0)) | length(which(is.na(dataworking[,var_name])))){
+    error <- 1
+    errorText <- NULL
+    if(length(which(dataworking[,var_name] == 0))){
+      errorText <- paste(errorText,"The variable ",var_name," has ",length(which(dataworking[,var_name] == 0))," number of values as 0.",sep="")
+    }
+    if(length(which(dataworking[,var_name] < 0))){
+      errorText <- paste(errorText,"The variable ",var_name," has ",length(which(dataworking[,var_name] < 0))," number of values as negative.",sep="")
+    }
+    if(length(which(is.na(dataworking[,var_name])))){
+      errorText <- paste(errorText,"The variable ",var_name," has ",length(which(is.na(dataworking[,var_name])))," number of values as missing.",sep="")
+    }
+    write(errorText,file=paste(output_path,"/error.txt",sep=""))
+  }
+}
+
+if(error==0){
+  adstockCheckTransformCreate(var_name,decay_rate,eqn_type,dependent_variable)
+ 
+  #-------------------------------------------------------------------------------
+  # update the dataset properties
+  #-------------------------------------------------------------------------------
+  source(paste(genericCode_path,"datasetprop_update.R",sep="/"))
+  #-------------------------------------------------------------------------------
+  
+  write(x="ADSTOCK_VARIABLE_CREATION_COMPLETED",file=paste(output_path,"/ADSTOCK_VARIABLE_CREATION_COMPLETED.txt",sep=""))
+}

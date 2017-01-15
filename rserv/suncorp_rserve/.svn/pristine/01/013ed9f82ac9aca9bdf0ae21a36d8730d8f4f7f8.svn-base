@@ -1,0 +1,195 @@
+#Parameters required
+#-----------------------------------------------------------------
+# inputPath <- 'C:/Users/Anvita.srivastava/MRx/r/logisticDrop-4-Nov-2014-14-47-06/2/'
+# c_var_in <- c('Verbatim')
+# n_minWordLength <- 3
+# n_minDocFrequency <- 1
+# n_minFrequency <- 1
+# n_maxFrequency <- Inf
+# n_numTerms <- NULL
+# n_grp <- c('0','1','1','2','2','2')
+# n_grp <- c('0')
+# c_grp_flag <- c('1_1_1','1_2_1','1_2_2','1_1_2','1_1_1','1_1_2')
+# c_grp_flag <- c('1_1_1')
+# c_entity <- c()
+#n_report_id <- '2'
+
+#Libraries required
+#-----------------------------------------------------------------
+library(muPreProcessing)
+library(muFrequency)
+library(NLP)
+library(tau)
+
+
+tagPOS <- function(corpus,language="en"){
+  
+  sent_token_annotator  <- Maxent_Sent_Token_Annotator()
+  word_token_annotator  <- Maxent_Word_Token_Annotator()
+  pos_tag_annotator     <- Maxent_POS_Tag_Annotator()
+  
+  corpus.set.to.return  <- NULL 
+  for(i in 1:length(corpus)){
+    corpus.element.annotated <- annotate(corpus[i], 
+                                         list(sent_token_annotator,
+                                              word_token_annotator))
+    
+    
+    
+    pos.tagged <- annotate(corpus[i], pos_tag_annotator, 
+                           corpus.element.annotated)
+    pos.tagged.word <- subset(pos.tagged, type == "word")
+    
+    tags <- sapply(pos.tagged.word$features, `[[`, "POS")
+    
+    
+    sent.tagged <-  paste(apply(cbind(pos.tagged.word$start,pos.tagged.word$end, tags),1,
+                                function(word.terms, sent){return(paste(substr(sent,word.terms[1],word.terms[2]),word.terms[3],sep="/"))},
+                                sent=corpus[i]),collapse=" ")
+    
+    corpus.set.to.return[i] <- sent.tagged
+    
+  }
+  return(corpus.set.to.return)
+}
+#---------------------------------------------------------------------------------------
+# Loading the data
+#---------------------------------------------------------------------------------------
+load(paste(inputPath,"/dataworking.RData",sep=""))
+
+
+
+#---------------------------------------------------------------------------------------
+# Looping for different levels of panel
+#---------------------------------------------------------------------------------------
+
+for(j in 1:length(c_var_in))
+{
+  
+  for(i in 1:length(n_grp))
+  {
+    n_grp_now            <- n_grp[i]
+    c_grp_flag_now       <- c_grp_flag[i]
+    
+    if(n_grp_now != 0)
+    {
+      index <- which(dataworking[, paste("grp", n_grp_now, "_flag", sep="")] == c_grp_flag_now)
+      data  <- data.frame(dataworking[index,c_var_in])
+      colnames(data)<-c_var_in
+    }else{
+      data  <- dataworking[c_var_in[j]]
+    }
+    
+    #changing the encoding of data for further processing
+    index_true<-which(is.locale(as.character(data[,c_var_in[j]])) == "FALSE")
+    if(length(index_true))
+    {
+      data[index_true,c_var_in[j]]<-iconv(as.character(data[index_true,c_var_in[j]]),from="latin1" ,to = "UTF-8")
+    }
+    
+    if(n_report_id != '')
+    {
+      var_output_path <- paste(inputPath,"/",n_grp_now,"/",c_grp_flag_now,"/text mining/frequency analysis/"
+                               ,n_report_id,"/",c_var_in[j],sep="")
+    }else {
+      var_output_path <- paste(inputPath,"/",n_grp_now,"/",c_grp_flag_now,"/",
+                               "/text mining/relationship analysis/frequency report/",c_var_in[j],sep="")
+    }
+    
+    
+    #---------------------------------------------------------------------------------------
+    # Extraction of Noun, Verb and Adjective
+    #---------------------------------------------------------------------------------------
+    
+    if(!is.null(c_entity))
+    {
+      data["POSTag"] <- ""
+      if(length(grep("^\\s*$",x = data[,c_var_in[j]]))>0)
+        data<-data[-grep("^\\s*$",x = data[,c_var_in[j]]),]
+      
+      for(k in 1:length(c_entity))
+      {
+        extractPos   <- apply(data[c_var_in[j]],2,function(x) extractPOS(x,c_entity[k]))
+        data["POSTag"] <- paste(data[,"POSTag"],extractPos,sep=" ")
+      }
+      
+      analysisData <- data[,"POSTag"]
+    }
+    if(is.null(c_entity))
+    {
+      analysisData <- as.character(data[,c_var_in[j]])
+    }
+    
+    # Remove blanks rows
+    if(length(grep("^\\s*$",x = analysisData))>0)
+      analysisData<-analysisData[-grep("^\\s*$",x = analysisData)]
+    
+    
+    if(length(analysisData)!= 0) 
+    {
+      #---------------------------------------------------------------------------------------
+      # get the frequency list
+      #---------------------------------------------------------------------------------------
+      freqList <- analyseFrequency(analysisData,reportLoc=NULL,minWordLen=n_minWordLength
+                                   ,minDocFreq=n_minDocFrequency,minimumFreq=as.numeric(n_minFrequency),
+                                   maximumFreq=as.numeric(n_maxFrequency))
+      
+      if(nrow(freqList) == 0) {
+        write(x="Term frequency range subsetting gave 0 terms",
+              file=paste(var_output_path, "/warning.txt", sep=""))
+      }else{
+        if(n_numTerms!= "")
+        {
+          n_numTerms <- as.numeric(n_numTerms)
+          if(n_numTerms > nrow(freqList))
+          {
+            n_numTerms <- nrow(freqList)
+          }
+          freqList <- freqList[1:n_numTerms,]
+        }
+        
+        if(n_report_id!= '')
+        {
+          write.csv(freqList,file=paste(var_output_path, "/termsList.csv", sep=""),
+                    row.names=FALSE , quote=FALSE)
+          
+          # Settings for word cloud image creation
+          # Creates a png in the specified directory
+          #---------------------------------------------------------------------------------------
+          
+          
+          pal2 <- brewer.pal(8,"Dark2")
+          
+          
+          png(paste(var_output_path,"WordCloud.png",sep="/"), width=800, height=600)
+          
+          wordcloud(freqList$word, freqList$freq, scale=c(8,.2), min.freq=1, max.words=Inf,random.order=FALSE,rot.per=.15, colors=pal2)
+          
+          
+          #---------------------------------------------------------------------------------------
+          # Closing time!
+          #---------------------------------------------------------------------------------------
+          dev.off()
+          
+        }else{
+          write.csv(freqList[c("word","freq")],file=paste(var_output_path, "/termsList.csv", sep=""),
+                    row.names=FALSE , quote=FALSE)
+        }
+        
+      }
+    }else{
+      write(x="No data to analyse", file=paste(var_output_path, "/warning.txt", sep=""))
+    }
+    if(n_report_id != "")
+    {
+      write("FREQUENCY_ANALYSIS", file = paste(inputPath,"/",n_grp_now,"/",c_grp_flag_now,"/text mining/frequency analysis/"
+                                               ,n_report_id, "/", "FREQUENCY_ANALYSIS_COMPLETED.TXT", sep=""))
+    }else{
+      write("FREQUENCY_ANALYSIS", file = paste(inputPath,"/",n_grp_now,"/",c_grp_flag_now,"/text mining/relationship analysis/frequency report/"
+                                               ,"FREQUENCY_ANALYSIS_COMPLETED.TXT", sep=""))  
+    }
+    
+  }
+}
+
+

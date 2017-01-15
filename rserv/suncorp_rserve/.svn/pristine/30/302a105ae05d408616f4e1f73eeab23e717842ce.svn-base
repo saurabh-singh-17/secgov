@@ -1,0 +1,81 @@
+if(exists('isDQA')){
+  #----------------------------------------------------------------------------------------------------
+  # Code for DQA > Unique Values for Variables
+  #----------------------------------------------------------------------------------------------------
+  dataworking <- subset(x=read.csv(input_path),select=var_list)
+  output      <- lapply(dataworking,unique)
+  maxLen      <- max(sapply(output,length))
+  for(i in seq_along(output)){
+    output[[i]] <- as.character(output[[i]])[order(x=as.numeric(as.character(output[[i]])),na.last=T)]
+    output[[i]][which(as.character(output[[i]])=='')] <- 'MISSING'
+    output[[i]] <- c(output[[i]],rep("", maxLen - length(output[[i]])))
+  }
+  output <- as.data.frame(output)
+  write.csv(output, paste(output_path,file = "uniqueValues.csv",sep="/"), quote=FALSE, row.names=FALSE)
+  write("UNIQUE_VALUES_COMPLETED", file = paste(output_path, "UNIQUE_VALUES_COMPLETED.TXT", sep="/"))
+}else{
+  #===========================Project Header=============================
+  #Process Name:MRx_UniqueValues 
+  #Description: Creates unique Values for the selected Variables
+  #Return type: completed Text
+  #Created Date : 27-Aug-2012
+  #Author : Arun Pillai
+  #=======================================================================
+  
+  
+  #R--CODE
+  varlist_init<-var_list
+  var_list<-gsub("\\-","\\.",var_list)
+  var_list<-gsub(" ","\\.",var_list)
+  var_list<-gsub("\\+","\\.",var_list)
+  
+  
+  uniqData <- subset(read.csv(input_path), select= var_list)
+  #to remove na values and replace them with some existing value
+  for(i in 1:ncol(uniqData))
+  {
+    if(any(is.na(uniqData[,i]))==TRUE)
+    {
+      k<- which(is.na(uniqData[,i])==FALSE)
+      uniqData[which(is.na(uniqData[,i])==TRUE),i]<- uniqData[k[1],i]  
+    }
+  }
+  inputList=lapply(uniqData,unique)
+  maxLen = max(sapply(inputList, length))
+  for(i in seq_along(inputList))
+    inputList[[i]] <- c(as.character(inputList[[i]]), rep("", maxLen - length(inputList[[i]])))
+  
+  
+  output <- as.data.frame(inputList)
+  # Added the if loop below to remove NA values(using it in New Var Creation - Binning)
+  # Added on 17Jan2013 1543 - Vasanth MM
+  #-----------------------------
+  if(ncol(output)==1){
+    # Removing NA values(if any) from the list
+    output <- output[!is.na(output),]
+    output <- output[order(as.numeric(as.character(output)))]
+    output <- as.data.frame(output)
+    names(output) <- names(inputList)
+  }
+  #-----------------------------
+  
+  # if(length(var_list)==1)
+  # {
+  #   tempVal=unique(uniqData[,1])
+  #   output <- as.data.frame(sort(tempVal,decreasing=FALSE))
+  #   names(output)=var_list
+  #   if(is.na(tempVal)==TRUE)
+  #   {
+  #     output <- NA
+  #     names(output)=var_list
+  #     output=as.data.frame(output)
+  #     names(output)=var_list
+  #   }
+  #  
+  # }
+  colnames(output)<-varlist_init
+  write.csv(output, paste(output_path,file = "uniqueValues.csv",sep="/"), quote=FALSE, row.names=FALSE)
+  
+  #completed.text
+  write("UNIQUE_VALUES_COMPLETED", file = paste(output_path, "UNIQUE_VALUES_COMPLETED.TXT", sep="/"))
+}

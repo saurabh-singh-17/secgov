@@ -1,0 +1,108 @@
+# Written by: Tushar Gupta
+# Time: Sep 2014 
+#==============================view duplicates part================================
+#Sample parameters 
+# inputPath <-"D:/datasets/"
+# outputPath <-"D:/datasets"
+# var_list  <-c("geography","Store_Format")
+#=================================================================================
+options(digits=10)
+if (file.exists(paste(outputPath,"/ERROR.TXT",sep=""))){
+  file.remove(paste(outputPath,"/ERROR.TXT",sep=""))
+}
+#=================================================================================   
+#                               Reading the dataset
+#=================================================================================
+load(file=paste(inputPath, "/", "dataworking.RData", sep=""))
+dataworking <- useDateFormat(c_path_in = inputPath,
+                             x = dataworking)
+
+Statistics <- c("Number of Observations","Number of duplicates detected",
+                "Number of Duplicates removed","Keep Option")
+#================================================================================= 
+
+dataworking<- dataworking[,c(datasetVar,"primary_key_1644")]
+number_records <- nrow(dataworking)
+#================================================================================= 
+#For keeping first occurence (both as option and for auto ticking in view of first )
+#=================================================================================
+if (length(var_list) != 1){
+  dataworking[,"var"] <-apply(dataworking[,var_list],1,function(x){paste(x,collapse="_")})
+}else{
+  dataworking[,"var"]<- dataworking[,var_list]
+}
+logical_vector_F <- duplicated(dataworking[,"var"])
+index_F <-which(!logical_vector_F=="TRUE")
+
+logical_vector_L <- duplicated(dataworking[,"var"],fromLast=T)
+index_L <- which(!logical_vector_L == "TRUE")
+
+#================================================================================= 
+dataworking[index_F,"flag_F"]<-1
+dataworking[index_L,"flag_L"]<-1
+dataworking[,"dummy"]<-0
+dataworking[index_F,"dummy"] <- 1
+
+
+# text <- paste("with(dataworking, order(",
+#               paste(var_list,
+#                     collapse=","),
+#               "))",
+#               sep="")
+# expr <- parse(text=text)
+# dataworking<-dataworking[eval(expr),]
+dataworking<- dataworking[(with(dataworking, order(var))),]
+#================================================================================= 
+#                         For displaying the duplicates
+#=================================================================================
+
+
+#allDups checks for duplicated records
+
+allDups <- duplicated(dataworking[,"var"],fromLast=TRUE) |duplicated(dataworking[,"var"])
+Duplicates <- duplicated(dataworking[,"var"])
+duplicate_observations <-length(which(Duplicates=="TRUE"))
+Value <- c(number_records,duplicate_observations,"","")
+Observation_view <-cbind(Statistics,Value)
+#=================================================================================
+# In case there is no duplicated record 
+# based on the given selection, there will be error.txt
+#=================================================================================
+if (length(which(allDups==TRUE))==0){
+  write("No duplicate observations for the given selection",
+        paste(outputPath,"/ERROR.TXT",sep="")) 
+  stop("No duplicate observations for the given selection")
+}
+dataworking  <- dataworking[allDups,] 
+
+#================================================================================
+#merging the duplicates data with first occurence data to obtain the flag  
+#for auto selecting first occurences 
+#================================================================================
+
+
+#================================================================================
+#sorting the found duplicates based on variables selected 
+#================================================================================
+dataworking[,"murx_dp_levels"]<-cumsum(dataworking$dummy)
+dataworking$var<- NULL
+dataworking$dummy<- NULL
+order_index <-which(names(dataworking) %in% c("murx_dp_levels",var_list))
+column_order <- c("murx_dp_levels",var_list,colnames(dataworking[-order_index]))
+dataworking <- dataworking[,column_order]
+nobs_dataworking<-nrow(dataworking)
+
+#================================================================================
+# text<- paste("c(",paste(datasetVar,collapse=","),")")
+# expr<- parse(text=text)
+
+#================================================================================ 
+#writing completed txt and results csv 
+#================================================================================
+write(nobs_dataworking,paste(outputPath,"/nobs.txt",sep=""))
+write.csv(dataworking,paste(outputPath,"/duplicates.csv",sep=""),row.names=F, quote=F)
+write.csv(Observation_view,paste(outputPath,"/OBSERVATIONS.csv",sep=""),row.names=F,quote=F)
+write("COMPLETED",file=paste(outputPath,"/DUPLICATE_COMPLETED.TXT",sep=""))
+
+#================================================================================ 
+

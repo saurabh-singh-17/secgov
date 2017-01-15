@@ -1,0 +1,93 @@
+#------------------------------------------------------------------------------------------------------#                                                                                                  --#   
+#-- Process Name : unique_date_values.R                        
+#-- Description  : generates CSV and XML at given location     
+#-- Return type  : csv and XML              
+#-- Author       : Payal Gupta
+#------------------------------------------------------------------------------------------------------#
+
+#libraries Required.
+library(XML)
+library(sqldf)
+
+# dataworking<-read.csv(paste(input_path,"dataworking.csv",sep="/"))
+load(paste(input_path,"/dataworking.RData",sep=""))
+dateformat<-function(date){
+  form<-NULL
+  temp<-as.character(date[1])
+  if(any(grepl("[[:alpha:]]",date) == "TRUE"))
+  {
+    return("unknown")
+  }
+  if(grepl(" ",temp)){
+    date<-apply(as.data.frame(date),1,function(x){strsplit(as.character(x)," ")[[1]][1]})
+  }
+  date<-as.character(date)
+  if (is.null(date))
+    return("unknown")  
+  if(is.na(mean(as.numeric(date),na.rm=T)) == "FALSE")
+  {
+    return("unknown")
+  }
+  if((length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == FALSE)))   &
+    (length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == FALSE))))
+    return("unknown")
+  if (all(is.na(date))) 
+    return(NA)
+  val<-length(date)
+  if(val > 100){val= 100}
+  date[which(date=='')] <- NA
+  if(!is.na(as.numeric(substr(date[1],1,4)))){
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],5,5)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[3,]))),na.rm=T)
+    if(max1 > 12 & max2 <= 12){form<-paste("%Y",split,"%d",split,"%m",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+  }else{
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],6-(10-nchar(date[1])),6-(10-nchar(date[1])))
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+  }
+  if(max(nchar(date)) <= 8)
+  {
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],nchar(date[1])-2,nchar(date[1])-2)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+  }
+  if(nchar(temp[1]) > 10 & nchar(temp[1]) <= 16){form<- paste(form," %H:%M",sep="")}
+  if(nchar(temp[1]) > 16){form<- paste(form," %H:%M:%S",sep="")}
+  return(form)
+}
+
+final<-NULL
+for(i in 1:length(var_list))
+{
+  date<-dataworking[,var_list[i]]
+  format_date<-dateformat(date)
+  newdate <- strptime(as.character(dataworking[,var_list[i]]), format_date)
+  newdate<-newdate[c(order(newdate))]
+
+  new <- strftime(format(newdate, "%Y/%m/%d"),"%m/%d/%Y")
+  uniqueValues <- as.data.frame(new)
+  colnames(uniqueValues)<-(var_list[i])
+ 
+  unique<-as.data.frame(c(as.character(uniqueValues[1,1]),as.character(uniqueValues[nrow(uniqueValues),1])))
+  colnames(unique)<-(var_list[i])
+  if(i==1){final<-unique
+  }else
+  {final<-cbind(final,unique)}
+}
+
+write.csv(final,file=paste(output_path,"uniqueValues.csv",sep="/"),quote=FALSE,row.names=FALSE)

@@ -1,0 +1,210 @@
+#-------------------------------------------------------------------------------
+# Parameters required
+#-------------------------------------------------------------------------------
+# input_path <- 'C:/Users/vasanth.mm/MRx/r/dsa-16-Oct-2013-13-47-41/5'
+# dataset_name <- 'dataworking'
+# output_path <- 'C:/Users/vasanth.mm/MRx/r/dsa-16-Oct-2013-13-47-41/5/NewVariable/Binning/2'
+# no_bins <- '4'
+# bin_type  <- 'percentile'
+# analysis_var <- 'ACV'
+# new_variable <- 'per4'
+# datasetinfo_path <- 'C:/Users/vasanth.mm/MRx/r/dsa-16-Oct-2013-13-47-41/5/NewVariable/Binning/2'
+# genericCode_path <- 'C:/Program Files/muRx/com/musigma/reusablemodules/rCodes/common'
+#-------------------------------------------------------------------------------
+
+
+#-------------------------------------------------------------------------------
+# Libraries required
+#-------------------------------------------------------------------------------
+library(XML)
+library(Hmisc)
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# making "" NULL
+#-------------------------------------------------------------------------------
+a.all <- ls()
+
+for (c.tempi in a.all) {
+  
+  x_tempi <- eval(parse(text=c.tempi))
+  
+  if (class(x_tempi) != "character") next  
+  if (length(x_tempi) != 1) next
+  if (is.null(x_tempi) | x_tempi != "") next
+  
+  assign(x=c.tempi, value=NULL)
+  print(c.tempi)
+  
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# Parameter play
+#-------------------------------------------------------------------------------
+c.path.input        <- input_path
+c.path.output       <- output_path
+c.path.dataset.info <- datasetinfo_path
+c.type.bin          <- bin_type
+c.var.input         <- analysis_var
+c.newvar.name       <- new_variable
+n.bins              <- as.numeric(no_bins)
+n.cutpoints         <- NULL
+#-------------------------------------------------------------------------------
+# Im thinking of creating the below parameter for all the modules
+# It lists all the variables that are in the parameter
+# We can take only these variables from the dataset
+#-------------------------------------------------------------------------------
+c.temp             <- ls(pattern="c\\.var\\.")
+c.temp             <- paste("c(",paste(c.temp,collapse=","),")",sep="")
+c.var.all          <- eval(parse(text=c.temp))
+#-------------------------------------------------------------------------------
+c.type.bin         <- gsub(pattern="data_order", replacement="datasetorder", x=c.type.bin)
+c.type.bin         <- gsub(pattern="equalsize", replacement="equalrange", x=c.type.bin)
+if (c.type.bin == "custom") {
+  n.cutpoints <- xmlToDataFrame(paste(c.path.output, "/custom_values.xml", sep=""))
+  n.cutpoints <- as.numeric(as.character(n.cutpoints[, 1]))
+} else {
+  n.cutpoints <- NULL
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# Load the data
+#-------------------------------------------------------------------------------
+load(paste(c.path.input,"/dataworking.RData",sep=""))
+df.data <- dataworking
+rm("dataworking")
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# Function to create the binned variable
+#-------------------------------------------------------------------------------
+untitled <- function(x,
+                     c.type.bin,  # datasetorder, percentile, equalrange, custom
+                     n.bins=NULL,
+                     n.cutpoints=NULL,
+                     l.namethebins=F) {
+  if (c.type.bin == "percentile" | c.type.bin == "equalrange" | c.type.bin == "custom") {
+    n.bins <- min(n.bins, length(na.omit(unique(x))))
+  } else if (c.type.bin == "datasetorder") {
+    n.bins <- min(n.bins, length(x))
+  }
+  
+  if (c.type.bin == "percentile") {
+    n.newvar     <-(cut2(x=x, g=n.bins))
+  } else if (c.type.bin == "equalrange" | c.type.bin == "datasetorder" | c.type.bin == "custom") {
+    if (c.type.bin == "equalrange" | c.type.bin == "datasetorder") {
+      if (c.type.bin == "datasetorder") {
+        x           <- 1:length(x)
+      }
+      if (min(x, na.rm=TRUE) == max(x, na.rm=TRUE)) {
+        n.cutpoints <- rep(min(x, na.rm=TRUE), times=2)
+        n.bins = 1
+      } else {
+        n.cutpoints <- seq(from=min(x, na.rm=TRUE), to=max(x, na.rm=TRUE),
+                           by=(max(x, na.rm=TRUE) - min(x, na.rm=TRUE)) / n.bins)
+      }
+    }
+    
+    n.newvar <- rep(x=NA, times=length(x))
+    for (tempi in 1:n.bins) {
+      print(tempi)
+      index <- which(x >= n.cutpoints[tempi] & x < n.cutpoints[tempi + 1])
+      if (tempi == n.bins) {
+        index <- c(index, which(x == n.cutpoints[tempi + 1]))
+      }
+      if (length(index)) {
+        n.newvar[index] <- tempi
+      }
+    }
+  }
+  
+  if (l.namethebins) {
+    n.max <- tapply(X=x, INDEX=n.newvar, FUN=max, na.rm=TRUE)
+    n.min <- tapply(X=x, INDEX=n.newvar, FUN=min, na.rm=TRUE)
+    if (c.type.bin != "datasetorder") {
+      n.max <- sprintf(fmt="%.02f", n.max)
+      n.min <- sprintf(fmt="%.02f", n.min)
+    } 
+    
+    c.newvar <- paste(n.min[n.newvar],
+                      " - ",
+                      n.max[n.newvar],
+                      sep="")
+    
+    return(c.newvar)
+  } else {
+    return(n.newvar)
+  }
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# Creating the new binned variable and adding it to the data
+#-------------------------------------------------------------------------------
+n.cutpoints <- c(min(df.data[,c.var.input],
+                     na.rm=TRUE),
+                 n.cutpoints,
+                 max(df.data[,c.var.input],
+                     na.rm=TRUE))
+df.data[,c.newvar.name] <- untitled(x=df.data[,c.var.input], c.type.bin=c.type.bin, n.bins=n.bins, n.cutpoints=n.cutpoints, l.namethebins=T)
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# 6000 check
+#-------------------------------------------------------------------------------
+df_newvar                      <- subset(x=df.data, select=c.newvar.name)
+if (nrow(df_newvar) > 6000) {
+  x_temp                       <- sample(x=nrow(df_newvar),
+                                         size=6000,
+                                         replace=FALSE)
+  df_newvar                    <- df_newvar[x_temp, , drop=FALSE]
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# Write the necessary outputs
+#-------------------------------------------------------------------------------
+write.csv(df_newvar, paste(c.path.output,"/binning_subsetViewpane.csv",sep=""), quote=F, row.names=F)
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# Save the data
+#-------------------------------------------------------------------------------
+dataworking <- df.data
+rm("df.data")
+save(dataworking,file=paste(input_path,"/dataworking.RData",sep=""))
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# update the dataset properties
+#-------------------------------------------------------------------------------
+source(paste(genericCode_path,"datasetprop_update.R",sep="/"))
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# Indicate completion
+#-------------------------------------------------------------------------------
+write("EDA - VARIABLE_BINNING_COMPLETED", file=paste(c.path.output, "/VARIABLE_BINNING_COMPLETED.TXT", sep=""))
+#-------------------------------------------------------------------------------

@@ -1,0 +1,363 @@
+#---------------------------------------------------------------------------------------#
+#--                                                                                   --#
+#--  Project Name:   Text Mining                                                      --#
+#--  Task :          Task 1: Frequency Analysis                       	      		  --#
+#--  Sub-Task:       1.1 Generating word cloud                                        --#
+#--  version :       1.0 date: 14/03/2012 author: Gaurav Jain		          		  --#
+#---------------------------------------------------------------------------------------#
+
+
+# Defining some custom functions
+# 1. To install required packages
+# 2. To split text into tokens based on whitespaces
+#---------------------------------------------------------------------------------------
+
+
+is.installed <- function(pkg){ is.element(pkg, installed.packages()[,1])}
+
+strsplit_space_tokenizer <- function(x) unlist(strsplit(x, "[[:space:]]+"))
+
+
+
+freqAnalysis <- function(filePath, fileName, varName,
+                         ifVerbs = FALSE, ifNouns = FALSE, ifAdj = FALSE,
+                         reportLoc, freqCloudLoc, topCloudLoc,
+                         minWordLen = 3, minDocFreq = 1,
+                         findFreqTerms = FALSE, findTopTerms = FALSE,
+                         minimumFreq = 1, maximumFreq = Inf, numTerms = 25) {
+
+print(varName)
+if(!is.installed('RTextTools')){
+  install.packages('RTextTools',repo="http://lib.stat.cmu.edu/R/CRAN")
+  library('RTextTools')
+}
+if(!is.installed('wordcloud')){
+	install.packages('wordcloud',repo="http://lib.stat.cmu.edu/R/CRAN")
+	library('wordcloud')
+}
+if(!is.installed('RColorBrewer')){
+	install.packages('RColorBrewer',repo="http://lib.stat.cmu.edu/R/CRAN")
+	library('RColorBrewer')
+}
+
+  require('RTextTools')
+  require('wordcloud')
+  require('RColorBrewer')
+
+posTagger <- function(filePath, fileName, varName,
+                      extractVerbs = TRUE,
+                      extractNouns = TRUE,
+                      extractAdjectives = TRUE) {
+
+
+if(!is.installed('RTextTools')){
+  install.packages('RTextTools',repo="http://lib.stat.cmu.edu/R/CRAN")
+  library('RTextTools')
+}
+if(!is.installed('openNLP')){
+  install.packages('openNLP',repo="http://lib.stat.cmu.edu/R/CRAN")
+  library('openNLP')
+}
+if(!is.installed('openNLPmodels.en')){
+  install.packages('openNLPmodels.en',repo="http://lib.stat.cmu.edu/R/CRAN")
+  library('openNLPmodels.en')
+}
+
+  require('RTextTools')
+  require('openNLP')
+  require('openNLPmodels.en')
+
+  # To read data from a single csv file and create a dataset of required column
+  #----------------------------------------------------------------------------
+
+  fileLoc <- paste(filePath,fileName,sep="\\")
+
+  tmDataSet <- read_data(fileLoc,type="csv")
+  dataSize <- nrow(tmDataSet)
+
+  varIndex <- which(colnames(tmDataSet)==varName)
+
+  dataList <- as.vector(tmDataSet[,varIndex])
+
+  # To remove punctuations from dataset
+  #----------------------------------------------------------------------------
+
+  dataList <- removePunctuation(dataList, preserve_intra_word_dashes = FALSE)
+
+  # POS-tag the dataset
+  #----------------------------------------------------------------------------
+
+  dataList <- tagPOS(dataList, language = "en")
+
+  nounPOS = c()
+  verbPOS = c()
+  adjPOS = c()
+
+  # Extracting nouns, verbs and adjectives from the tagged data
+  #----------------------------------------------------------------------------
+
+  for(i in 1:length(dataList)) {
+
+    wordlist <- unlist(strsplit(dataList[i], " ", fixed=TRUE))
+    splitVars <- sapply(wordlist, function(str){strsplit(str, "/", fixed=TRUE)},
+                        simplify = TRUE, USE.NAMES = FALSE)
+
+    splitMat <- as.data.frame(t(data.frame(splitVars)))
+
+    words = as.character(splitMat$V1)
+    postags = as.vector(splitMat$V2)
+
+    noun = ""
+    verb = ""
+    adj = ""
+
+    for(j in 1:length(words)) {
+
+      tag2 = substr(postags[j],1,2)
+	if(length(tag2)==0){
+	print(tag2)
+	
+	}
+	else{
+
+      if(tag2 == 'NN') {
+        noun = paste(noun,words[j],sep=" ")
+      }
+
+      if(tag2 == 'VB') {
+        verb = paste(verb,words[j],sep=" ")
+      }
+
+      if(tag2 == 'JJ') {
+        adj = paste(adj,words[j],sep=" ")
+      }
+
+		}
+}
+
+    nounPOS = c(nounPOS,noun)
+    verbPOS = c(verbPOS,verb)
+    adjPOS = c(adjPOS,adj)
+
+  }
+
+  verbPOS = tolower(verbPOS)
+  nounPOS = tolower(nounPOS)
+  adjPOS = tolower(adjPOS)
+
+  tmDataSetNew <- cbind(tmDataSet)
+
+  # Adding POS entity data to the original dataset
+  #----------------------------------------------------------------------------
+
+  if(extractVerbs) {
+    tmDataSetNew <- cbind(tmDataSetNew,verbPOS)
+  }
+
+  if(extractNouns) {
+    tmDataSetNew <- cbind(tmDataSetNew,nounPOS)
+  }
+
+  if(extractAdjectives) {
+    tmDataSetNew <- cbind(tmDataSetNew,adjPOS)
+  }
+
+  return(tmDataSetNew)
+}
+
+  
+  extractVerbs = TRUE
+  extractNouns = TRUE
+  extractAdjectives = TRUE
+
+  # To read data from a csv file and create a dataset from required column(s)
+  #---------------------------------------------------------------------------------
+
+  #fileLoc <- paste(filePath,fileName,sep="\\")
+
+  #tmDataSet <- read_data(fileLoc,type="csv")
+   tmDataSet <- posTagger(filePath, fileName, varName,TRUE,TRUE,TRUE)	
+
+  #corpus = ""
+  corpus = ""
+  print(filePath)
+  print(fileName)
+  print(varName)
+  print(tmDataSet)
+
+  if(!ifVerbs & !ifNouns & !ifAdj) {
+    varIndex <- which(colnames(tmDataSet)==varName)
+    corpus <- tolower(tmDataSet[,varIndex])
+  } else {
+    if(ifVerbs) {
+      varIndex <- which(colnames(tmDataSet)=='verbPOS')
+      corpus <- tolower(tmDataSet[,varIndex])
+    }
+    if(ifNouns) {
+
+      	varIndex <- which(colnames(tmDataSet)=='nounPOS')
+      	corpus <- paste(corpus,tolower(tmDataSet[,varIndex]),sep=" ")
+    }
+    if(ifAdj) {
+      varIndex <- which(colnames(tmDataSet)=='adjPOS')
+      corpus <- paste(corpus,tolower(tmDataSet[,varIndex]),sep=" ")
+    }
+  }
+
+  # To convert dataset into Plain text document
+  #----------------------------------------------------------------------------
+
+  doc <- PlainTextDocument(corpus)
+
+  # To remove punctuations from dataset
+  #----------------------------------------------------------------------------
+
+  doc <- removePunctuation(doc, preserve_intra_word_dashes = TRUE)
+
+  # To remove leading and trailing whitespaces
+  #----------------------------------------------------------------------------
+
+  doc = sub("^[[:space:]]*(.*?)[[:space:]]*$", "\\1", doc, perl=TRUE)
+
+  # Frequency calculation and sorting data based on count in descending order
+  # -------------------------------------------------------------------------
+
+  freqList <- termFreq(doc,
+              control = list(tokenize = strsplit_space_tokenizer,
+                             wordLengths = c(minWordLen, Inf)))
+
+  word = names(freqList)
+  freq <- as.numeric(freqList)
+
+  ap.d <- data.frame(word,freq)
+
+  ap.d.sorted <- ap.d[order(-freq,word),]
+
+  comment.count = nrow(tmDataSet)
+  unique.word.count = nrow(ap.d.sorted)
+  total.word.count = sum(ap.d.sorted$freq)
+
+  # Finding frequent terms between a frequency range
+  # -------------------------------------------------------------------------
+
+  if(findFreqTerms) {
+    freqTermsList <- subset(ap.d.sorted,ap.d.sorted$freq > minimumFreq &
+                            ap.d.sorted$freq < maximumFreq)
+
+    freqTermsList$freqShare <- round((freqTermsList$freq/total.word.count)*100,
+                                      digits=2)
+
+    x <- as.numeric(sapply(freqTermsList$word, function(str)
+                                      {str=paste(str," ",sep="")
+                                      length(subset(corpus, grepl(str, corpus)))},
+                                      simplify = TRUE, USE.NAMES = FALSE))
+
+    y <- as.numeric(sapply(freqTermsList$word, function(str)
+                                      {str=paste(" ",str,"$",sep="")
+                                      length(subset(corpus, grepl(str, corpus)))},
+                                      simplify = TRUE, USE.NAMES = FALSE))
+
+    freqTermsList$commentsPresent <- x + y
+
+    freqTermsList$commentShare <- round((freqTermsList$commentsPresent/comment.count)*100,
+                                      digits=2)
+
+    freqTermsList <- subset(freqTermsList, freqTermsList$commentsPresent >= minDocFreq)
+
+    # To write the frequency report in a csv
+    #----------------------------------------------------------------------------
+
+    write.csv(freqTermsList, file = reportLoc, append = FALSE, col.names = TRUE,
+            row.names = FALSE)
+
+    # Settings for word cloud image creation
+    # Creates a png in the specified directory
+    #---------------------------------------------------------------------------------------
+
+    pal2 <- brewer.pal(8,"Dark2")
+
+    png(freqCloudLoc, width=800, height=600)
+
+    wordcloud(freqTermsList$word, freqTermsList$freq, scale=c(8,.2), min.freq=1, max.words=Inf,random.order=FALSE,rot.per=.15, colors=pal2)
+
+    #---------------------------------------------------------------------------------------
+    # Closing time!
+    #---------------------------------------------------------------------------------------
+
+    dev.off()
+
+  }
+
+  # Finding topmost frequent terms
+  # -------------------------------------------------------------------------
+
+  if(findTopTerms) {
+
+    # numTerms = number of top terms
+    # -------------------------------
+
+    topTermsList <- ap.d.sorted[1:numTerms,]
+
+    topTermsList$freqShare <- round((topTermsList$freq/total.word.count)*100,
+                                      digits=2)
+
+    x <- sapply(topTermsList$word, function(str)
+                                      {str=paste(str," ",sep="")
+                                      length(subset(corpus, grepl(str, corpus)))},
+                                      simplify = TRUE, USE.NAMES = FALSE)
+
+    y <- sapply(topTermsList$word, function(str)
+                                      {str=paste(" ",str,"$",sep="")
+                                      length(subset(corpus, grepl(str, corpus)))},
+                                      simplify = TRUE, USE.NAMES = FALSE)
+
+    topTermsList$commentsPresent <- x + y
+
+    topTermsList$commentShare <- round((topTermsList$commentsPresent/comment.count)*100,
+                                      digits=2)
+
+    topTermsList <- subset(topTermsList, topTermsList$commentsPresent >= minDocFreq)
+
+    # To write the frequency report in a csv
+    #----------------------------------------------------------------------------
+
+    write.csv(topTermsList, file = reportLoc, append = FALSE, col.names = TRUE,
+            row.names = FALSE)
+
+    # Settings for word cloud image creation
+    # Creates a png in the specified directory
+    #---------------------------------------------------------------------------------------
+
+    pal2 <- brewer.pal(8,"Dark2")
+
+    png(topCloudLoc, width=800, height=600)
+	print(topTermsList$word)
+	print(topTermsList$freq)
+
+    wordcloud(topTermsList$word, topTermsList$freq, scale=c(8,.2), min.freq=1, max.words=Inf,random.order=FALSE,rot.per=.15, colors=pal2)
+
+    #---------------------------------------------------------------------------------------
+    # Closing time!
+    #---------------------------------------------------------------------------------------
+
+    dev.off()
+
+  }
+
+  returnStr <- paste(comment.count,total.word.count,unique.word.count,sep=",")
+
+  # To clear all variable used
+  #----------------------------------------------------------------------------
+
+  rm(list=c("filePath","fileName","fileLoc","varName","tmDataSet",
+            "corpus","varIndex","dataSize","pal2","topTermsList",
+            "freqTermsList","x","y","comment.count","unique.word.count",
+            "total.word.count","doc","word","freq","ap.d","ap.d.sorted",
+            "freqList","minimumFreq", "maximumFreq", "numTerms","minDocFreq",
+            "freqCloudLoc","topCloudLoc","minWordLen","reportLoc",
+            "strsplit_space_tokenizer"))
+
+
+  return(returnStr)
+
+}

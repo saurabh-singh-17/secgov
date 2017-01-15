@@ -1,0 +1,217 @@
+#-------------------------------------------------------------------------------
+# info : sample parameters
+#-------------------------------------------------------------------------------
+# input_path <- c('C:/Users/vasanth.mm/MRx/r/vasanth_merge-30-Oct-2014-24-56-02/1', 'C:/Users/vasanth.mm/MRx/r/vasanth_merge-30-Oct-2014-24-56-02/2', 'C:/Users/vasanth.mm/MRx/r/vasanth_merge-30-Oct-2014-24-56-02/3')
+# output_path <- 'C:/Users/vasanth.mm/MRx/r/vasanth_merge-30-Oct-2014-24-56-02/DatasetManipulation/Merge/1'
+# dataset_names <- c('dataworking', 'dataworking', 'dataworking')
+# key_variables <- c('key1')
+# type_join <- 'left_join_only'
+# new_Dataset_name <- 'm1in'
+# final_variables <- c('d1')
+# selected_vars1 <- c('d1', 'key1')
+# selected_vars2 <- c('d1', 'key1')
+# selected_vars3 <- c('d1', 'key1')
+
+c_data_in                        <- dataset_names
+c_data_new                       <- new_Dataset_name
+c_path_in                        <- input_path
+c_path_out                       <- output_path
+c_type_merge                     <- type_join
+c_type_merge_2                   <- c_type_merge
+c_var_in_by                      <- key_variables
+c_var_in_final                   <- final_variables
+list_c_var_in_selected           <- NULL
+
+c_type_merge_2                   <- gsub(pattern="inner_join",
+                                         replacement="baseANDchild",
+                                         x=c_type_merge_2)
+c_type_merge_2                   <- gsub(pattern="Outer_join",
+                                         replacement="baseORchild",
+                                         x=c_type_merge_2)
+c_type_merge_2                   <- gsub(pattern="Left_outer",
+                                         replacement="base",
+                                         x=c_type_merge_2)
+c_type_merge_2                   <- gsub(pattern="Right_outer",
+                                         replacement="child",
+                                         x=c_type_merge_2)
+c_type_merge_2                   <- gsub(pattern="right_join_only",
+                                         replacement="notbaseANDchild",
+                                         x=c_type_merge_2)
+c_type_merge_2                   <- gsub(pattern="left_join_only",
+                                         replacement="baseANDnotchild",
+                                         x=c_type_merge_2)
+for (i in 1:length(c_path_in)) {
+  list_c_var_in_selected[[i]]    <- eval(parse(text=paste("selected_vars",
+                                                          i,
+                                                          sep="")))
+}
+# x_temp                           <- c(length(c_path_in),
+#                                       1:(length(c_path_in) - 1))
+# c_data_in                        <- c_data_in[x_temp]
+# c_path_in                        <- c_path_in[x_temp]
+# list_c_var_in_selected           <- list_c_var_in_selected[x_temp]
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# Making the "" parameters NULL
+#-------------------------------------------------------------------------------
+a.all <- ls()
+
+for (c.tempi in a.all) {
+  
+  x_tempi <- eval(parse(text=c.tempi))
+  
+  if (class(x_tempi) != "character") next  
+  if (length(x_tempi) != 1) next
+  if (is.null(x_tempi) | x_tempi != "") next
+  
+  assign(x=c.tempi, value=NULL)
+  print(c.tempi)
+  
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# function : muRx_merge
+# df_base                        <- base data.frame
+# df_child                       <- child data.frame
+# c_var_by                       <- variables to merge by
+# c_type_merge                   <- type of merge
+
+# df_base                        <- <data.frame>
+# df_child                       <- <data.frame>
+# c_var_by                       <- <character>
+# c_type_merge                   <- baseANDchild|baseORchild|base|child|
+#                                     notbaseANDchild|baseANDnotchild
+#-------------------------------------------------------------------------------
+muRx_merge                       <- function(df_base,
+                                             df_child,
+                                             c_var_by,
+                                             c_type_merge) {
+  if (c_type_merge == "notbaseANDchild") {
+    ret                          <- muRx_merge(df_base=df_child,
+                                               df_child=df_base,
+                                               c_var_by=c_var_in_by,
+                                               c_type_merge="baseANDnotchild")
+    return(ret)
+  }
+  
+  if (c_type_merge == "baseANDnotchild") {
+    x_temp                       <- NULL
+    for(i in c_var_by) {
+      x_temp[[i]]                <- !(df_base[,i] %in% df_child[,i])
+    }
+    x_temp                       <- as.data.frame(x_temp)
+    x_temp                       <- apply(x_temp,
+                                          1,
+                                          function(x) Reduce(f="&", x=x))
+    ret                          <- df_base[x_temp, , drop=FALSE]
+    return(ret)
+  }
+  
+  if (c_type_merge == "baseANDchild") {
+    all.x                        <- FALSE
+    all.y                        <- FALSE
+  }
+  if (c_type_merge == "baseORchild") {
+    all.x                        <- TRUE
+    all.y                        <- TRUE
+  }
+  if (c_type_merge == "base") {
+    all.x                        <- TRUE
+    all.y                        <- FALSE
+  }
+  if (c_type_merge == "child") {
+    all.x                        <- FALSE
+    all.y                        <- TRUE
+  }
+  suffixes                       <- c("", ".muRx")
+  
+  ret                            <- merge(x=df_base,
+                                          y=df_child,
+                                          by=c_var_by,
+                                          all.x=all.x,
+                                          all.y=all.y,
+                                          suffixes=suffixes)
+  x_temp                         <- colnames(ret)
+  x_temp                         <- x_temp[!grepl(pattern="\\.muRx",
+                                                  x=x_temp)]
+  ret                            <- ret[x_temp]
+  return(ret)
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# loading and merging the datasets
+#-------------------------------------------------------------------------------
+for (i in 2:length(c_path_in)) {
+  # initialising the base dataset
+  if (i == 2) {
+    load(paste(c_path_in[1], "/dataworking.RData", sep=""))
+    x_temp                       <- unique(c(c_var_in_by,
+                                             list_c_var_in_selected[[1]]))
+    df_data_base                 <- dataworking[x_temp]
+    rm("dataworking")
+  } else {
+    df_data_base                 <- df_data_new
+  }
+  
+  # initialising the child dataset
+  load(paste(c_path_in[i], "/dataworking.RData", sep=""))
+  x_temp                         <- unique(c(c_var_in_by,
+                                             list_c_var_in_selected[[i]]))
+  df_data_child                  <- dataworking[x_temp]
+  rm("dataworking")
+  
+  # merging the datasets
+  df_data_new                    <- muRx_merge(df_base=df_data_base,
+                                               df_child=df_data_child,
+                                               c_var_by=c_var_in_by,
+                                               c_type_merge=c_type_merge_2)
+}
+df_data_new                      <- df_data_new[unique(c_var_in_final)]
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# error check
+#-------------------------------------------------------------------------------
+if (nrow(df_data_new) == 0) {
+  c_error                        <- "The resultant dataset has 0 observations."
+  write(c_error, paste(c_path_out, "/NO_OF_ROWS_IS_ZERO.txt" ,sep=""))
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# formatting the output
+#-------------------------------------------------------------------------------
+df_data_new <- useDateFormat(c_path_in = input_path,
+                             x = df_data_new)
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# output : resultant dataset
+#-------------------------------------------------------------------------------
+write.csv(df_data_new,
+          paste(c_path_out, "/", c_data_new, ".csv", sep=""),
+          row.names=FALSE, quote=FALSE)
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# completed txt
+#-------------------------------------------------------------------------------
+write("MERGE_COMPLETED", paste(c_path_out, "/MERGE_COMPLETED.txt", sep=""))
+#-------------------------------------------------------------------------------

@@ -1,0 +1,148 @@
+source('~/.active-rstudio-document', echo=TRUE)
+source('D:/SVN New/DBO - R Server/segmentation/lcm/cluster_creation.R', echo=TRUE)
+try_lcm <- try(expr={
+flexmix_model                    <- flexmix(formula=as.formula(c_formula),
+data=dataworking,
+k=NULL,
+cluster=m_initial_prob,
+model=FLXMRglm(),
+concomitant=FLXPconstant(),
+control=list(iter=n_max_iter,
+tol=n_converge),
+weights=NULL)
+},
+silent=TRUE)
+class(try_lcm)
+attributes(try_lcm)
+try_lcm$condition
+try_lcm[1]
+try_lcm
+cat(try_lcm[1])
+try_flexmix <- try(expr={
+flexmix_model                    <- flexmix(formula=as.formula(c_formula),
+data=dataworking,
+k=NULL,
+cluster=m_initial_prob,
+model=FLXMRglm(),
+concomitant=FLXPconstant(),
+control=list(iter=n_max_iter,
+tol=n_converge),
+weights=NULL)
+},
+silent=TRUE)
+source('~/.active-rstudio-document', echo=TRUE)
+source('D:/SVN New/DBO - R Server/segmentation/lcm/cluster_creation.R', echo=TRUE)
+source('~/.active-rstudio-document', echo=TRUE)
+source('D:/SVN New/DBO - R Server/segmentation/lcm/cluster_creation.R', echo=TRUE)
+source('~/.active-rstudio-document', echo=TRUE)
+source('D:/SVN New/DBO - R Server/segmentation/lcm/cluster_creation.R', echo=TRUE)
+source('D:/SVN New/vasanth/utility - compiler.R', echo=TRUE)
+source('~/.active-rstudio-document', echo=TRUE)
+source('D:/SVN New/DBO - R Server/segmentation/lcm/cluster_creation.R', echo=TRUE)
+traceback()
+try_flexmix
+n_cluster
+x_temp
+x_temp
+n_cluster
+df_cluster_summary
+FLXgetParameters(object=flexmix_model)
+flexmix_model
+m_initial_prob
+source('~/.active-rstudio-document', echo=TRUE)
+source('D:/SVN New/DBO - R Server/segmentation/lcm/cluster_creation.R', echo=TRUE)
+source('D:/SVN New/vasanth/utility - compiler.R', echo=TRUE)
+source('~/.active-rstudio-document', echo=TRUE)
+source('D:/SVN New/DBO - R Server/newvarcreation/MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+source('D:/SVN New/DBO - R Server/newvarcreation/MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+source('D:/SVN New/DBO - R Server/newvarcreation/MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+source('D:/SVN New/DBO - R Server/newvarcreation/MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+all.vars(as.formula(object=c_equation))
+all.vars(as.formula(paste("~", c_equation)))
+source('D:/SVN New/DBO - R Server/newvarcreation/MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+?assign
+parent.env
+parent.env()
+sys.parents()
+parent.frame()
+a <- 2
+f <- function() {
+ls(envir=parent.frame())
+}
+f()
+f <- function() {
+lol <- 1
+ls(envir=parent.frame())
+}
+f()
+f(f())
+source('D:/SVN New/DBO - R Server/newvarcreation/MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+a <- NULL
+class(a)
+length(a)
+a == ""
+source('D:/SVN New/DBO - R Server/newvarcreation/MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+source('D:/SVN New/DBO - R Server/newvarcreation/MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+traceback()
+source('D:/SVN New/vasanth/utility - properties file converter.R', echo=TRUE)
+source('D:/SVN New/vasanth/utility - properties file converter.R', echo=TRUE)
+source('D:/SVN New/vasanth/utility - properties file converter.R', echo=TRUE)
+source('D:/SVN New/DBO - R Server/newvarcreation/MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+source('D:/SVN New/DBO - R Server/newvarcreation/MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+c_equation
+c_equation                       <- "12 * (ACV) + 3 * (sales)"
+c_equation                    <- gsub(pattern="\n",
+replacement="",
+c_equation)
+c_equation                       <- gsub(pattern="\\(",
+replacement="\\(as\\.numeric\\(",
+c_equation)
+c_equation
+c_equation                       <- gsub(pattern="//)",
+replacement="//)//)",
+c_equation)
+c_equation
+gsub(pattern="//)",
+replacement="//)//)",
+c_equation)
+c_equation                       <- "12 * (ACV) + 3 * (sales)"
+gsub(pattern="//)",
+replacement="//)//)",
+c_equation)
+c_equation                    <- gsub(pattern="\n",
+replacement="",
+c_equation)
+c_equation                       <- gsub(pattern="\\(",
+replacement="\\(as\\.numeric\\(",
+c_equation,
+fixed=TRUE)
+c_equation                       <- gsub(pattern="//)",
+replacement="//)//)",
+c_equation,
+fixed=TRUE)
+c_equation
+c_equation                       <- "12 * (ACV) + 3 * (sales)"
+c_equation                       <- gsub(pattern="(",
+replacement="(as.numeric(",
+c_equation,
+fixed=TRUE)
+c_equation                       <- gsub(pattern=")",
+replacement="))",
+c_equation,
+fixed=TRUE)
+c_equation
+source('D:/SVN New/DBO - R Server/newvarcreation/MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+source('D:/SVN New/DBO - R Server/newvarcreation/MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+paste(c_path_folder_out,
+"/",
+c_file_aeb,
+sep="")
+source('D:/SVN New/DBO - R Server/newvarcreation/MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+source('D:/SVN New/DBO - R Server/newvarcreation/MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+source('D:/SVN New/vasanth/utility - compiler.R', echo=TRUE)
+source('D:/SVN New/DBO - R Server/newvarcreation/MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+source('D:/SVN New/vasanth/utility - properties file converter.R', echo=TRUE)
+source('D:/SVN New/vasanth/utility - compiler.R', echo=TRUE)
+source('C:/Users/vasanth.mm/MRx/r/vasanth_05dec2014-5-Dec-2014-12-31-13/1/NewVariable/ArithmeticEqnBuilder/1/code_MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)
+source('D:/SVN New/vasanth/utility - compiler.R', echo=TRUE)
+source('C:/Users/vasanth.mm/MRx/r/vasanth_05dec2014-5-Dec-2014-12-31-13/1/NewVariable/ArithmeticEqnBuilder/1/code_MRx_newvariablecreation _arithmeticEquationBuilder.R', echo=TRUE)

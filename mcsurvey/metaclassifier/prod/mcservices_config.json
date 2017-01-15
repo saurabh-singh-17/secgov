@@ -1,0 +1,50 @@
+[
+    {
+        "name": "sentiment",
+        "call": "mcserviceswrapper_sentiment",
+        "resfiles":  ["prod/SALR_SEMEVAL_NB2.msmdl"],
+		"defaultService":1
+    },
+    {
+        "name": "problemDetection",
+        "call": "mcserviceswrapper_problem",
+		"resfiles": ["prod/PD_VPAnalysis4SKLR.msmdl"],
+		"defaultService":1
+
+    },
+    {
+        "name": "keywords",
+        "call": "mcserviceswrapper_keywords",
+		"resfiles": [],
+		"defaultService":1
+    },
+    {
+        "name": "tokstags",
+        "call": "mcserviceswrapper_tokstags",
+		"resfiles": [],
+		"defaultService":1
+    },
+    {
+        "name": "phraseanalysis",
+        "call": "mcserviceswrapper_phraseanalysis",
+		"resfiles": [],
+		"defaultService":0
+    },
+    {
+        "name": "entitySentiment",
+        "call": "mcserviceswrapper_entity",
+		"resfiles": [],
+		"defaultService":1
+    },
+    {
+        "name": "counts",
+        "call": "mcserviceswrapper_counts",
+		"resfiles": [],
+		"defaultService":0
+    },
+    {
+        "name": "adDetection",
+        "call": "mcserviceswrapper_ads",
+		"defaultService":0
+    }
+]

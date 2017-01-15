@@ -1,0 +1,244 @@
+# inputPath        <- 'C:/Users/Anvita.srivastava/MRx/r/logisticDrop-4-Nov-2014-14-47-06/2/'
+# c_var_in         <- c('Verbatim')
+# ifManual         <- 'false'
+# ifAuto           <- 'true'
+# numTopics        <- '6'
+# numKeys          <- '4'
+# numIterations    <- '3'
+# n_grp            <- c(1)
+# c_grp_flag       <- c("2_1_1")
+# n_report_id      <- 'r5'
+# c_entity         <- c()
+
+
+#Libraries required
+#-----------------------------------------------------------------
+library(muPreProcessing)
+library(lda)
+library(RTextTools)
+library(slam)
+library(glmnet)
+library(NLP)
+#library(openNLPmodels.en)
+
+# tagPOS <- function(corpus,language="en"){
+#   
+#   sent_token_annotator  <- Maxent_Sent_Token_Annotator()
+#   word_token_annotator  <- Maxent_Word_Token_Annotator()
+#   pos_tag_annotator     <- Maxent_POS_Tag_Annotator()
+#   
+#   corpus.set.to.return  <- NULL 
+#   for(i in 1:length(corpus)){
+#     corpus.element.annotated <- annotate(corpus[i], 
+#                                          list(sent_token_annotator,
+#                                               word_token_annotator))
+#     
+#     
+#     
+#     pos.tagged <- annotate(corpus[i], pos_tag_annotator, 
+#                            corpus.element.annotated)
+#     pos.tagged.word <- subset(pos.tagged, type == "word")
+#     
+#     tags <- sapply(pos.tagged.word$features, `[[`, "POS")
+#     
+#     
+#     sent.tagged <-  paste(apply(cbind(pos.tagged.word$start,pos.tagged.word$end, tags),1,
+#                                 function(word.terms, sent){return(paste(substr(sent,word.terms[1],word.terms[2]),word.terms[3],sep="/"))},
+#                                 sent=corpus[i]),collapse=" ")
+#     
+#     corpus.set.to.return[i] <- sent.tagged
+#     
+#   }
+#   return(corpus.set.to.return)
+# }
+# 
+#---------------------------------------------------------------------------------------
+# Loading the data
+#---------------------------------------------------------------------------------------
+load(paste(inputPath,"/dataworking.RData",sep=""))
+dataworking       <-na.omit(dataworking)
+
+
+top.topic.words.custom <- function(topics, num.words = 20, by.score = FALSE) {
+  if(by.score){
+    rm(list = c('env'))
+    env <- new.env(parent = globalenv())
+    env$num.words <- num.words
+    env$topics <- topics
+    normalized.topics <- topics/(rowSums(topics) + 1e-05)
+    nTopics<-nrow(topics)
+    if(nTopics > 1) { 
+      scores <- apply(as.matrix(normalized.topics), 2, function(x) x * (log(x + 1e-05) - sum(log(x + 1e-05))/length(x)))
+    } else {
+      scores<-as.matrix(normalized.topics)
+    }
+    ret1 <- apply(as.matrix(scores),1,sortOnX,env)
+    ret2 <- apply(as.matrix(scores),1,sortOnX,env,FALSE)
+    if((nTopics > 1)==FALSE)
+    {
+      row.names(ret2)<-NULL 
+    }
+    
+  } else {
+    ret1 <- apply(as.matrix(topics),1,sortOnX,env)
+    ret2 <- apply(as.matrix(topics),1,sortOnX,env,FALSE)
+  }
+  
+  rm(list = c('env'))
+  return(list(ret1,ret2))
+}
+
+sortOnX <- function(x,env,retNames = TRUE) {
+  if(retNames) {
+    retVec <- colnames(env$topics)
+  } else {
+    retVec <- x
+  }
+  retVec[order(x,decreasing = TRUE)[1:env$num.words]]
+}
+
+
+#---------------------------------------------------------------------------------------
+# Looping for different levels of panel
+#---------------------------------------------------------------------------------------
+
+for(i in 1:length(n_grp))
+{
+  n_grp_now       <- n_grp[i]
+  c_grp_flag_now  <- c_grp_flag[i]
+  
+  if(n_grp_now != 0)
+  {
+    index         <- which(dataworking[, paste("grp", n_grp_now, "_flag", sep="")] == c_grp_flag_now)
+    data          <- dataworking[index,]
+  }else
+  {
+    data          <- dataworking
+  }
+  
+  output_path     <- paste(inputPath,"/",n_grp_now,"/",c_grp_flag_now,"/text mining/topic modeling/"
+                           ,n_report_id,sep="")
+  
+  for(j in 1:length(c_var_in))
+  {
+    
+    var_output_path        <- paste(output_path,"/",c_var_in[j],sep="")
+    
+    
+    #---------------------------------------------------------------------------------------
+    # Extraction of Noun, Verb and Adjective
+    #---------------------------------------------------------------------------------------
+    
+    if(!is.null(c_entity))
+    {
+      if(length(grep("^\\s*$",x = data[,c_var_in[j]]))>0)
+        data<-data[-grep("^\\s*$",x = data[,c_var_in[j]]),]
+      dataList <- tagPOS(as.character(data[,c_var_in]), language = "en")
+      for(k in 1:length(c_entity)){
+      
+        if(k==1)
+          POSextract<-paste("[[:punct:]]*/",c_entity[k],".?",sep="")
+        else
+          POSextract<-paste(POSextract,"|[[:punct:]]*/",c_entity[k],".?",sep="")
+      }
+      dataList<-sapply(strsplit(dataList,POSextract),function(x) {res = sub("(^.*\\s)(\\w+$)", "\\2", x); res[!grepl("\\s",res)]} )
+      dataList<-lapply(dataList,paste,collapse=" ")
+      analysisData<-unlist(dataList)
+    }else { 
+      analysisData         <- data[,c_var_in[j]]
+    }
+    
+    
+    #---------------------------------------------------------------------------------------
+    # Clean the Data
+    #---------------------------------------------------------------------------------------
+    analysisData           <- apply(as.data.frame(analysisData),2,removeURL)
+    analysisData           <- apply(analysisData,2,removeNonAlphabetChars)
+    analysisData           <- apply(analysisData,2,removeEmailIds)
+    analysisData           <- apply(analysisData,2,removeDigits)
+    analysisData           <- apply(analysisData,2,compressWhiteSpaces)
+    analysisData           <- tolower(analysisData)
+    
+    if(length(analysisData)!=0)
+    {
+      if(ifManual) {
+        nTopics            <- numTopics
+      } else {
+        numKeys            <- 5
+        numIterations      <- 20
+        dtm                <- create_matrix(analysisData,language="english",
+                                            minWordLength = 3,minDocFreq = 1,
+                                            stripWhitespace = TRUE,
+                                            toLower = TRUE,weighting = weightTf)
+        
+        term_tfidf         <- tapply(dtm$v/row_sums(dtm)[dtm$i], dtm$j, mean) *
+          log2(nDocs(dtm)/col_sums(dtm > 0))
+        
+        dtm                <- dtm[,term_tfidf >= round(summary(term_tfidf)[[3]],digits = 1)]
+        dtm                <- dtm[row_sums(dtm) > 0,]
+        
+        numRow             <- nrow(dtm)
+        numCol             <- ncol(dtm)
+        
+        nonZeroEntries     <- nnzero(dtm)
+        
+        if(nonZeroEntries == 0) {
+          nonZeroEntries   <- 1
+        }
+        
+        nTopics            <- round((numRow * numCol)/(nonZeroEntries))
+        
+      }
+      
+      corpus               <- str_trim(analysisData,side="both")
+      corpus               <- lexicalize(corpus, lower=TRUE)
+      result               <- lda.collapsed.gibbs.sampler(corpus$documents, nTopics,
+                                                          corpus$vocab, numIterations,
+                                                          0.1, 0.1, compute.log.likelihood=TRUE)
+      top.words            <- top.topic.words.custom(result$topics, numKeys, by.score=TRUE)
+      wordProb             <- data.frame(rep(1:nTopics,each=numKeys),as.character(top.words[[1]]),as.numeric(top.words[[2]]))
+      #       word.list            <- top.words[[1]]
+      #       score.list           <- top.words[[2]]
+      #       word.list            <- as.data.frame(word.list)
+      #       score.list           <- as.data.frame(score.list)
+      colnames(wordProb)   <- c("Topic","Word","Prob")
+      topic.proportions    <- t(result$document_sums) / colSums(result$document_sums)
+      topicPerDoc          <- max.col(topic.proportions, ties.method=c("random", "first", "last"))
+      topicChart           <- data.frame(table(topicPerDoc))
+      topicModel           <- cbind(data[c_var_in[j]],topicPerDoc)
+      
+      if(nrow(topicChart) < nTopics){
+        topicChart           <- data.frame(rep(1:nrow(topicChart)),topicChart)
+        topicModel           <- merge(topicModel,topicChart[c(1,2)],by="topicPerDoc")
+        wordProb             <- wordProb[which(wordProb[,"Topic"]%in%topicChart[,"topicPerDoc"]),]
+        wordProb             <- merge(wordProb,topicChart[c(1,2)],by.y="topicPerDoc",by.x="Topic")
+        topicModel           <- topicModel[-1]
+        colnames(topicModel) <- c("analysisData","topicPerDoc")
+        wordProb             <- wordProb[-1]
+        names(wordProb)[3]   <-  names(topicChart)[1]<- "Topic"
+        topicChart           <- topicChart[-2]
+      }else{
+        names(topicChart)[1] <- "Topic"
+        names(topicModel)[1] <- "analysisData"
+      }
+      
+      topicChart <- topicChart[order(topicChart[,"Topic"], topicChart$Topic),]
+    }else {
+      
+      write(x="No data to analyse", file=paste(var_output_path, "/error.txt", sep=""))
+    }
+    
+    wordProb <- na.omit(wordProb)
+    
+    write.csv(wordProb,file=paste(var_output_path, "/wordProb.csv", sep=""),
+              row.names=FALSE , quote=FALSE)
+    
+    write.csv(topicModel,file=paste(var_output_path, "/topicModel.csv", sep=""),
+              row.names=FALSE , quote=FALSE)
+    
+    write.csv(topicChart,file=paste(var_output_path, "/topicChart.csv", sep=""),
+              row.names=FALSE , quote=FALSE)
+  }
+  
+  write("TOPIC_MODELING", file = paste(output_path, "TOPIC_MODELING_COMPLETED.TXT", sep="/"))
+}

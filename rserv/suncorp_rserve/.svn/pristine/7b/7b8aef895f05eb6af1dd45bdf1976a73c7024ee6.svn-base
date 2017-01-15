@@ -1,0 +1,284 @@
+#------------------------------------------------------------------------------#
+#--                                                                          --#   
+#-- Project Name :  MRx_CategoricalIndicator_1.0                             --#
+#-- Description  :  Some functions for creating categorical indicators       --#
+#-- Return type  :  Creates CSV's at a location according to given inputs    --#
+#-- Author       :  Shankar Kumar Jha                                        --#                 
+#------------------------------------------------------------------------------#
+
+
+
+#-------------------------------------------------------------------------------
+# parameters required
+#-------------------------------------------------------------------------------
+# input_path <- 'C:/MRx/r/new-16-Nov-2012-14-22-35/1'
+# bivariate <- 'true'
+# output_path <- 'C:/MRx/r/new-16-Nov-2012-14-22-35/1/NewVariable/categoricalIndicator/10'
+# newvar_list <- 'mrx_bv_ACV'
+# prefix <- 'pd12'
+# input_xml <- 'C:/MRx/r/new-16-Nov-2012-14-22-35/1/NewVariable/categoricalIndicator/10/catInd_levels.xml'
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# libraries required
+#-------------------------------------------------------------------------------
+library(XML)
+library(Hmisc)
+library(data.table)
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# function to create xml from dataframe
+#-------------------------------------------------------------------------------
+dfToXML=function(dataFrame,rowNode,location){
+  xml <- xmlTree()
+  xml$addTag("TABLE", close=FALSE)
+  for (i in 1:nrow(dataFrame)) {
+    xml$addTag(rowNode, close=FALSE)
+    for(j in 1:ncol(dataFrame)){
+      xml$addTag("new_varname", dataFrame[i, j])
+    }
+    xml$closeTag()
+  }
+  xml$closeTag()
+  saveXML(xml,location)
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# Function to create the binned variable
+#-------------------------------------------------------------------------------
+untitled <- function(x,
+                     c.type.bin,  # datasetorder, percentile, equalrange, custom
+                     n.bins=NULL,
+                     n.cutpoints=NULL,
+                     l.namethebins=F){
+  if (c.type.bin == "percentile" | c.type.bin == "datasetorder") {
+    n.obs.in.bin <- diff(floor(seq(from=0, to=length(x), by=length(x) / n.bins)))
+    n.newvar     <- rep(x=1:n.bins, times=n.obs.in.bin)
+    if (c.type.bin == "percentile") {
+      key      <- 1:length(x)
+      key      <- key[order(x)]  
+      n.newvar <- n.newvar[order(key)]
+    }
+  }
+  if (c.type.bin == "equalrange" | c.type.bin == "custom") {
+    if (c.type.bin == "equalrange") {
+      if (min(x) == max(x)) {
+        n.cutpoints <- rep(min(x), times=2)
+        n.bins = 1
+      } else {
+        n.cutpoints <- seq(from=min(x), to=max(x), by=(max(x) - min(x)) / n.bins)
+      }
+    }
+    n.newvar <- rep(x=NA, times=length(x))
+    for (tempi in 1:n.bins) {
+      index <- which(x >= n.cutpoints[tempi] & x < n.cutpoints[tempi + 1])
+      if (tempi == n.bins) {
+        index <- c(index, which(x == n.cutpoints[tempi + 1]))
+      }
+      if (length(index)) {
+        n.newvar[index] <- tempi
+      }
+    }
+  }
+  
+  if (l.namethebins) {
+    if (c.type.bin == "percentile" | c.type.bin == "datasetorder") {
+      c.b4bin <- "bin "
+      c.a4bin <- ""
+      c.b4min <- " (min : "
+      c.a4min <- ";"
+      c.b4max <- " max : "
+      c.a4max <- ")"
+      sep     <- ""
+    } else {
+      c.b4bin <- "bin "
+      c.a4bin <- ""
+      c.b4min <- " ["
+      c.a4min <- ";"
+      c.b4max <- " "
+      c.a4max <- ")"
+      sep     <- ""
+    }
+    
+    if (c.type.bin == "equalrange") {
+      n.min       <- n.cutpoints[1:n.bins]
+      n.min       <- data.frame(Group.1=1:n.bins, x=n.min)
+      n.max       <- n.cutpoints[2:(n.bins + 1)]
+      n.max       <- data.frame(Group.1=1:n.bins, x=n.max)
+    } else {
+      n.min       <- aggregate(x=x, by=list(n.newvar), FUN=min, na.rm=T)
+      n.max       <- aggregate(x=x, by=list(n.newvar), FUN=max, na.rm=T)
+    }
+    c.bin.names  <- paste(c.b4bin, sprintf("%02d", n.min$Group.1), c.a4bin, c.b4min, n.min$x, c.a4min, c.b4max, n.max$x, c.a4max, sep=sep)
+    c.newvar     <- rep(x=NA, times=length(x))
+    for (tempi in unique(n.newvar)) {
+      if(is.na(tempi)) next
+      index           <- which(n.newvar == tempi)
+      c.newvar[index] <- c.bin.names[tempi]
+    }
+    if (c.type.bin == "equalrange" | c.type.bin == "custom") {
+      index <- which(n.newvar == n.bins)
+      c.newvar[index] <- gsub(pattern="\\)", replacement="]", x=c.newvar[index])
+    }
+    return(c.newvar)
+  } else {
+    return(n.newvar)
+  }
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# parameter play
+#-------------------------------------------------------------------------------
+try(expr = {input_xml_path <- input_xml}, silent = TRUE)
+
+c.xml        <- xmlToList(xmlTreeParse(input_xml_path))
+c.var.in     <- gsub(pattern=".level",
+                     replacement="",
+                     names(c.xml),
+                     fixed=TRUE)
+names(c.xml) <- NULL
+c.value      <- strsplit(x=unlist(c.xml), split="#")
+
+c.var.in.for.naming <- substr(x=c.var.in, start=1, stop=11)
+c.value.for.naming  <- lapply(X=c.value,
+                              FUN=function(x) substr(x=x[1], start=1, stop=11))
+c.var.in.for.naming <- gsub(pattern="[^[:alnum:]_]",
+                            replacement="_",
+                            x=c.var.in.for.naming)
+c.value.for.naming  <- gsub(pattern="[^[:alnum:]_]",
+                            replacement="_",
+                            x=c.value.for.naming)
+
+if(as.logical(bivariate)) c.var.in <- paste("bin_", c.var.in, sep="")
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# preparing the data
+#-------------------------------------------------------------------------------
+load(paste(input_path,"/dataworking.RData",sep=""))
+
+
+if(as.logical(bivariate)) {
+  
+  c.type.bin <- bin_type
+  n.bins     <- as.numeric(bin)
+  if(c.type.bin == "equal range") c.type.bin = "equalrange"
+  
+  data             <- untitled(x=dataworking[, newvar_list],
+                               c.type.bin=c.type.bin,
+                               n.bins=n.bins,
+                               l.namethebins=T)
+  data             <- as.data.frame(data)
+  colnames(data)   <- paste('bin', newvar_list, sep="_")
+  
+} else {
+  
+  data <- subset(x=dataworking, select=newvar_list)
+  
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# creating the new variable
+#-------------------------------------------------------------------------------
+c.var.new <- NULL
+
+for(i in 1:length(c.var.in)) {
+  
+  c.var.in.now            <- c.var.in[i]
+  c.value.now             <- c.value[[i]]
+  c.var.in.for.naming.now <- c.var.in.for.naming[i]
+  c.value.for.naming.now  <- c.value.for.naming[i]
+  c.var.new.now           <- paste(prefix,
+                                   "_",
+                                   c.value.for.naming.now,
+                                   "_",
+                                   c.var.in.for.naming.now,
+                                   sep="")
+  c.var.new               <- c(c.var.new, c.var.new.now)
+  
+  n.index <- which(data[, c.var.in.now] %in% c.value.now)
+  if("NA" %in% c.value.now) {
+    n.index <- c(n.index, which(is.na(data[, c.var.in.now])))
+  }
+  
+  data[, c.var.new.now]        <- 0
+  data[n.index, c.var.new.now] <- 1
+  
+}
+
+# dataworking <- cbind.data.frame(dataworking, subset(x=data, select=c.var.new))
+dataworking[, c.var.new] <- data[, c.var.new]
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# 6000 check
+#-------------------------------------------------------------------------------
+df_newvar                      <- data[c.var.new]
+if (nrow(df_newvar) > 6000) {
+  x_temp                       <- sample(x=nrow(df_newvar),
+                                         size=6000,
+                                         replace=FALSE)
+  df_newvar                    <- df_newvar[x_temp, , drop=FALSE]
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# outputs
+#-------------------------------------------------------------------------------
+write.csv(df_newvar,
+          paste(output_path,
+                "/categoricalVariableCreation_subsetViewpane.csv",
+                sep=""),
+          row.names=FALSE,
+          quote=FALSE)
+
+write.csv(dataworking,
+          paste(input_path,
+                "/dataworking.csv",
+                sep=""),
+          row.names=FALSE,
+          quote=FALSE)
+
+save(dataworking,
+     file=paste(input_path,
+                "/dataworking.RData",
+                sep=""))
+
+dfToXML(as.data.frame(c.var.new),
+        "NEW_VARNAME",
+        paste(output_path,
+              "/categoricalVariableCreation_new_varname.xml",
+              sep=""))
+
+#-------------------------------------------------------------------------------
+# update the dataset properties
+#-------------------------------------------------------------------------------
+source(paste(genericCode_path,"datasetprop_update.R",sep="/"))
+#-------------------------------------------------------------------------------
+
+
+write("CATEGORICAL_VARIABLE_CREATION_COMPLETED",
+      file=paste(output_path,
+                 "/CATEGORICAL_VARIABLE_CREATION_COMPLETED.txt",
+                 sep=""))
+#-------------------------------------------------------------------------------

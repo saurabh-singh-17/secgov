@@ -1,0 +1,157 @@
+#-------------------------------------------------------------------------------
+#-- Project Name :  MRx_Verify for Append_1.0
+#-- Description  :  Code to check if Appending of datasets is possible in MRx
+#-- Return type  :  Creates CSV's at a location according to given inputs
+#-- Author       :  Proma Majumdar
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# parameters required
+#-------------------------------------------------------------------------------
+#input_path           <- c('D:/', 'D:/')
+#output_path          <- 'D:/'
+#datasets             <- c('dataworking', 'dataworking')
+#common_vars          <- c('ACV', 'Hispanic_HHs_Index',  'HHs_55_64')
+#unselected_variables <- c('channel_2' , 'Store_Format' , 'sf1')
+#extra_vars_flag      <- 'TRUE'
+#exclusive_vars       <- c('geography','')
+#new_dataset          <- 'abc'
+#verify               <- 'FALSE'
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# libraries required
+#-------------------------------------------------------------------------------
+library(reshape)
+library(plyr)
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# parameter play
+#-------------------------------------------------------------------------------
+exclusive_vars <- gsub(pattern="\n", replacement="", x=exclusive_vars, fixed=T)
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# type of variables in the datasets
+#-------------------------------------------------------------------------------
+df.variable.type <- NULL
+for (tempi in 1:length(input_path)) {
+  load(paste(input_path[tempi], "/dataworking.RData", sep=""))
+  
+  c.varname.all <- colnames(dataworking)
+  c.vtyp.all    <- as.character(sapply(dataworking,class))
+  
+  rm("dataworking")
+  
+  # integer = 1, character = 0
+  c.vtyp.all <- gsub(pattern="logical", replacement="numeric", x=c.vtyp.all)
+  c.vtyp.all <- gsub(pattern="integer", replacement="numeric", x=c.vtyp.all)
+  c.vtyp.all <- gsub(pattern="factor",  replacement="character",  x=c.vtyp.all)
+  
+  df.temp <- data.frame(Name=c.varname.all,
+                        Type=c.vtyp.all, 
+                        stringsAsFactors=F)
+  colnames(df.temp)[2] <- paste("Type", tempi, sep="")
+  
+  if (tempi == 1) {
+    df.variable.type <- df.temp
+  } else {
+    df.variable.type <- merge(x=df.variable.type, y=df.temp, by="Name", all=T)
+  }
+}
+
+n.index.temp <- which(df.variable.type$Name %in% 
+                        unique(c(unlist(strsplit(x=exclusive_vars,
+                                                 split=",",
+                                                 fixed=T)),
+                                 common_vars,
+                                 unselected_variables)))
+df.variable.type <- df.variable.type[n.index.temp, ]
+
+
+n.temp <- length(input_path)
+l.typ.character <- apply(X=df.variable.type[2:(n.temp+1)],
+                         MARGIN=1,
+                         function(x) {any(x=="character", na.rm=T)})
+c.typ.all <- rep("numeric", times=nrow(df.variable.type))
+c.typ.all[l.typ.character] <- "character"
+
+l.typecast <- apply(X=df.variable.type[2:(n.temp+1)],
+                    MARGIN=1,
+                    function(x) {
+                      n.index.temp <- which(is.na(x))
+                      if (length(n.index.temp)) {
+                        x <- x[-n.index.temp]
+                      }
+                      length(unique(x)) != 1
+                    })
+
+l.selected <- apply(X=df.variable.type[1],
+                    MARGIN=1,
+                    FUN=function (x) {!(x %in% unselected_variables)})
+
+df.variable.type$Type <- c.typ.all
+df.variable.type$Typecast <- l.typecast
+df.variable.type$Selected <- l.selected
+df.variable.type <- df.variable.type[c("Name", "Type", "Typecast", "Selected")]
+n.temp.order <- order(df.variable.type$Selected, decreasing=T)
+df.variable.type <- df.variable.type[n.temp.order, ]
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# appending the datasets
+#-------------------------------------------------------------------------------
+if(verify != 'TRUE'){
+  l <- which(common_vars %in% df.variable.type$Name[l.typecast])
+  
+  for (tempi in 1:length(input_path)) {
+    load(paste(input_path[tempi], "/dataworking.RData", sep=""))
+    
+    c.var.all <- common_vars
+    if (exclusive_vars[tempi] != "") {
+      c.var.all <- c(c.var.all, unlist(strsplit(x=exclusive_vars[tempi],
+                                                split=",",
+                                                fixed=T)))
+    }
+    dataworking <- dataworking[c.var.all]
+    
+    if(length(l)){
+      dataworking[common_vars[l]] = apply(X=dataworking[common_vars[l]],
+                                          MARGIN=2,
+                                          FUN=as.character)
+    }
+    
+    if (tempi == 1) {
+      resultDF <- as.matrix(dataworking)
+    }else{
+      resultDF <- rbind.fill.matrix(resultDF, as.matrix(dataworking))
+    }
+  }
+  resultDF = data.frame(resultDF, stringsAsFactors = FALSE)
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# output
+#-------------------------------------------------------------------------------
+if (exists("verify") & verify == 'TRUE') {
+  write.csv(df.variable.type,paste(output_path,"/","Verify.csv",sep="" ),row.names=FALSE, quote=FALSE) 
+  write.csv("APPEND_VERIFY_COMPLETED",paste(output_path,"/APPEND_VERIFY_COMPLETED.txt",sep=""))
+} else {
+  write.csv(resultDF,paste(output_path,"/",new_dataset,".csv",sep="") ,row.names=FALSE)
+  write.csv("APPEND_DATASETS_COMPLETED",paste(output_path,"/APPEND_DATASETS_COMPLETED.txt",sep=""))
+}
+#-------------------------------------------------------------------------------

@@ -1,0 +1,614 @@
+customer service|neutral
+data plan|neutral
+2wire|neutral
+3g|neutral
+4g|neutral
+lte|neutral
+ability|neutral
+access code|neutral
+my id|neutral
+4 digit code|neutral
+four digit code|neutral
+4 digit pin|neutral
+user id|neutral
+caller id|neutral
+access id|neutral
+customer id|neutral
+access point|neutral
+account information|neutral
+account|neutral
+sub account|neutral
+sub-account|neutral
+subaccount|neutral
+activation|neutral
+activation fee|neutral
+after sales service|neutral
+after sales services|neutral
+after sale service|neutral
+after sale services|neutral
+hidden charges|negative
+dead zones|negative
+on demand|neutral
+on demand service|neutral
+on demand services|neutral
+privacy concerns|negative
+out of sync|negative
+adjustment|neutral
+agent|neutral
+agents|neutral
+apartment|neutral
+app|neutral
+appointment|neutral
+appointments|neutral
+flashing red light|negative
+blinking red light|negative
+blinking red|negative
+appt|neutral
+area|neutral
+smart phone|neutral
+blue screen|neutral
+article|neutral
+at&t access|neutral
+at&t account|neutral
+at&t accounts|neutral
+at&t bill|neutral
+at&t box|neutral
+at&t button|neutral
+at&t customer|neutral
+at&t email|neutral
+at&t rep|neutral
+at&t reps|neutral
+at&t representatives|neutral
+at&t representative|neutral
+at&t router|neutral
+at&t service|neutral
+at&t services|neutral
+at&t store|neutral
+at&t stores|neutral
+at&t uverse|neutral
+at&t uverse screen|neutral
+at&t website|neutral
+at&t yahoo|neutral
+audio|neutral
+authentication|neutral
+auto|neutral
+auto pay|neutral
+autopay|neutral
+balance|neutral
+bandwidth|neutral
+bar|neutral
+bars|neutral
+basement|neutral
+batteries|neutral
+battery|neutral
+bedroom|neutral
+bill|neutral
+bill amount|neutral
+billing|neutral
+billing cycle|neutral
+bills|neutral
+block|neutral
+box|neutral
+boxes|neutral
+broadband|neutral
+broadband light|neutral
+budget|neutral
+bundle|neutral
+button|neutral
+buttons|neutral
+cable|neutral
+cable|neutral
+cable box|neutral
+cables|neutral
+call|neutral
+calling|neutral
+calls|neutral
+cancellation|neutral
+card|neutral
+cell|neutral
+cell phone|neutral
+cell phones|neutral
+cellphone|neutral
+channel|neutral
+chat|neutral
+member id|neutral
+channels|neutral
+charge|neutral
+charges|neutral
+chrome|neutral
+cinemax|neutral
+cisco|neutral
+comcast|neutral
+commercial|neutral
+computer|neutral
+computers|neutral
+confirmation|neutral
+confirmation number|neutral
+this number|neutral
+my number|neutral
+connection|neutral
+connections|neutral
+connectivity|neutral
+contract|neutral
+controls|neutral
+cord|neutral
+cost|neutral
+coverage|neutral
+go over|neutral
+going over|neutral
+went over|neutral
+roll over|positive
+roll-over|positive
+credit|neutral
+credit card|neutral
+credits|neutral
+customer|neutral
+customers|neutral
+data|neutral
+deal|neutral
+delivery|neutral
+demand|neutral
+demand screen|neutral
+department|neutral
+desktop|neutral
+device|neutral
+device access code|neutral
+devices|neutral
+dial tone|neutral
+directv|neutral
+discount|neutral
+discounts|neutral
+dispatch|neutral
+display|neutral
+door|neutral
+dots|neutral
+download|neutral
+download speed|neutral
+downloads|neutral
+load|neutral
+drop|neutral
+dsl|neutral
+dsl|neutral
+dvd|neutral
+dvd player|neutral
+dvr|neutral
+dvr box|neutral
+dvr receiver|neutral
+dvr system|neutral
+email account|neutral
+e mail account|neutral
+email address|neutral
+e mail address|neutral
+err msg|neutral
+appt|neutral
+email|neutral
+emails|neutral
+e mails|neutral
+elite|neutral
+email|neutral
+e-mail|neutral
+e-mails|neutral
+emails|neutral
+uverse installation|neutral
+u-verse installation|neutral
+email password|neutral
+equipment|neutral
+equipment fee|neutral
+ethernet|neutral
+ethernet cable|neutral
+fee|neutral
+fees|neutral
+firefox|neutral
+firewall|neutral
+flashing|neutral
+frame|neutral
+gate|neutral
+gateway|neutral
+gears|neutral
+gift card|neutral
+google chrome|neutral
+guide|neutral
+hardware|neutral
+hbo|neutral
+hbo cinemax|neutral
+hbo/cinemax|neutral
+hd|neutral
+hd service|neutral
+hdmi|neutral
+hdmi cable|neutral
+hard drive|neutral
+hard drives|neutral
+home|neutral
+home computer|neutral
+home network|neutral
+home number|neutral
+home page|neutral
+home phone|neutral
+page load|neutral
+busy signal|negative
+lines|neutral
+home phone service|neutral
+hotspot|neutral
+house|neutral
+house phone|neutral
+inbox|neutral
+install|neutral
+installation|neutral
+installation date|neutral
+installation fee|neutral
+installer|neutral
+internet|neutral
+internet|neutral
+internet access|neutral
+internet bill|neutral
+internet connection|neutral
+internet explorer|neutral
+internet phone|neutral
+internet service|neutral
+internet services|neutral
+internet speed|neutral
+internet tv|neutral
+invoice|neutral
+ip address|neutral
+ipad|neutral
+iPhone|neutral
+iphone|neutral
+iphones|neutral
+issue|neutral
+kindle|neutral
+land line|neutral
+landline|neutral
+laptop|neutral
+laptops|neutral
+light|neutral
+lights|neutral
+link light|neutral
+location|neutral
+mac|neutral
+machine|neutral
+mails|neutral
+manager|neutral
+max|neutral
+max plus|neutral
+max turbo|neutral
+mbps|neutral
+message|neutral
+messages|neutral
+messaging|neutral
+mike|neutral
+mobile|neutral
+mobiles|neutral
+mobility|neutral
+support representative|neutral
+support rep|neutral
+model|neutral
+model number|neutral
+modem|neutral
+modem|neutral
+modems|neutral
+money|neutral
+movie|neutral
+movie channels|neutral
+movies|neutral
+neighborhood|neutral
+hand set|neutral
+handset|neutral
+data limit|neutral
+data limits|neutral
+neighbors|neutral
+spottier|negative
+remedy|positive
+throttle|negative
+blackout|negative
+laziness|negative
+slowness|negative
+telephone line|neutral
+phone line|neutral
+unlimited text|neutral
+unlimited data|neutral
+unlimited plan|neutral
+unlimited data plans|neutral
+unlimited data plan|neutral
+unlimited data plans|neutral
+unlimited wireless|neutral
+unlimited minutes|neutral
+unlimited voice|neutral
+unlimited international calling|neutral
+international calling|neutral
+net|neutral
+netflix|neutral
+network|neutral
+netwrk|neutral
+power strip|neutral
+wireless tv|neutral
+wireless tvs|neutral
+proxy server|neutral
+uverse installation|neutral
+access|neutral
+intrnet|neutral
+notification|neutral
+work|neutral
+programing|neutral
+programs|neutral
+pending order|negative
+network key|neutral
+offer|neutral
+offers|neutral
+online|neutral
+order|neutral
+order number|neutral
+order status|neutral
+orders|neutral
+outage|negative
+outlet|neutral
+restart|neutral
+restarting|neutral
+package|neutral
+packages|neutral
+paper bill|neutral
+paperless|neutral
+paperless billing|neutral
+paperwork|neutral
+pass word|neutral
+password|neutral
+password combination|neutral
+password reset|neutral
+passwords|neutral
+pay|neutral
+payment|neutral
+payment arrangement|neutral
+payments|neutral
+pc|neutral
+phone|neutral
+phone|neutral
+phone bill|neutral
+phone internet|neutral
+phone jack|neutral
+phone line|neutral
+phone lines|neutral
+phone service|neutral
+phones|neutral
+phones|neutral
+picture|neutral
+plan|neutral
+plan|neutral
+plug|neutral
+port|neutral
+ports|neutral
+power|neutral
+power button|neutral
+power cord|neutral
+power light|neutral
+power outage|negative
+press|neutral
+price|neutral
+prices|neutral
+pricing|neutral
+printer|neutral
+pro|neutral
+prob|neutral
+problem|negative
+profile|neutral
+promo|neutral
+promotion|neutral
+promotions|neutral
+protection|neutral
+provider|neutral
+providers|neutral
+quality|neutral
+range|neutral
+rate|neutral
+rates|neutral
+reboot|neutral
+receiver|neutral
+receivers|neutral
+reception|neutral
+reciever|neutral
+record|neutral
+recording|neutral
+recordings|neutral
+records|neutral
+refund|neutral
+registration|neutral
+remote|neutral
+remotes|neutral
+rep|neutral
+repair|neutral
+replacement|neutral
+representative|neutral
+reps|neutral
+reset|neutral
+reset button|neutral
+residence|neutral
+resolution|neutral
+results|neutral
+reward card|neutral
+rewards card|neutral
+rings|neutral
+room|neutral
+router|neutral
+router|neutral
+routers|neutral
+safari|neutral
+sales|neutral
+schedule|neutral
+screen|neutral
+screens|neutral
+security|neutral
+server|neutral
+servers|neutral
+service|neutral
+service appointment|neutral
+service call|neutral
+service light|neutral
+service tech|neutral
+services|neutral
+tech support|neutral
+technical support|neutral
+customer support|neutral
+cust support|neutral
+support representative|neutral
+customer care|neutral
+dropped calls|negative
+unlimited data|positive
+signal strength|neutral
+settings|neutral
+setup|neutral
+showtime|neutral
+signal|neutral
+signal|neutral
+slot|neutral
+snow|neutral
+software|neutral
+sound|neutral
+spam|neutral
+speed|neutral
+speed internet|neutral
+speed test|neutral
+speeds|neutral
+speedtest|neutral
+sprocket|neutral
+ssid|neutral
+proxy server|neutral
+status|neutral
+status bar|neutral
+store|neutral
+storm|neutral
+sub account|neutral
+subscription|neutral
+supervisor|neutral
+support|neutral
+switch|neutral
+switching|neutral
+system|neutral
+tablet|neutral
+tax|neutral
+taxes|neutral
+tech|neutral
+tech support|neutral
+technician|neutral
+technicians|neutral
+technology|neutral
+log in|neutral
+login|neutral
+log|neutral
+signin|neutral
+sign in|neutral
+playback|neutral
+techs|neutral
+telephone|neutral
+television|neutral
+television signal|neutral
+temp password|neutral
+termination fee|neutral
+test|neutral
+text|neutral
+texting|neutral
+texts|neutral
+time warner|neutral
+tool|neutral
+tools|neutral
+towers|neutral
+transcript|neutral
+transfer|neutral
+trial|neutral
+troubleshooting|neutral
+troubleshooting guide|neutral
+pin |neutral
+pin number|neutral
+mcafee|neutral
+tv|neutral
+tv|neutral
+tv box|neutral
+tv internet|neutral
+tv package|neutral
+tv receiver|neutral
+tv remote|neutral
+tv screen|neutral
+tv service|neutral
+tv signal|neutral
+tv program|neutral
+tv programs|neutral
+tv programming|neutral
+tv's|neutral
+tvs|neutral
+u family|neutral
+uverse|neutral
+session|neutral
+uverse account|neutral
+uverse bill|neutral
+uverse internet|neutral
+uverse service|neutral
+uverse tv|neutral
+uverse voice|neutral
+u-verse|neutral
+u200|neutral
+u300|neutral
+u450|neutral
+ufamily|neutral
+update|neutral
+update|neutral
+upgrade|neutral
+upload|neutral
+ups|neutral
+ups store|neutral
+usage|neutral
+uverse|neutral
+uverse|neutral
+uverse account|neutral
+uverse acct|neutral
+uverse bill|neutral
+uverse bills|neutral
+uverse box|neutral
+uverse internet|neutral
+uverse service|neutral
+uverse services|neutral
+uverse tv|neutral
+uverse voice|neutral
+video|neutral
+videos|neutral
+voice|neutral
+voice mail|neutral
+voicemail|neutral
+voicemail|neutral
+volume|neutral
+vz|neutral
+wall jack|neutral
+wap|neutral
+warner|neutral
+weather|neutral
+web site|neutral
+wi fi|neutral
+wi-fi|neutral
+wifi|neutral
+wifi|neutral
+wifi|neutral
+wifi password|neutral
+wire|neutral
+wired|neutral
+wired connection|neutral
+wired receiver|neutral
+wireless|neutral
+wireless|neutral
+wireless account|neutral
+wireless box|neutral
+wireless connection|neutral
+wireless devices|neutral
+wireless internet|neutral
+wireless light|neutral
+wireless network|neutral
+wireless network key|neutral
+wireless receiver|neutral
+wireless receivers|neutral
+wireless router|neutral
+wires|neutral
+wiring|neutral
+xbox|neutral
+yahoo|neutral
+yahoo account|neutral
+yahoo email|neutral
+yahoo mail|neutral
+work flow engine|neutral
+wfe|neutral
+workflowengine|neutral
+work flowengine|neutral

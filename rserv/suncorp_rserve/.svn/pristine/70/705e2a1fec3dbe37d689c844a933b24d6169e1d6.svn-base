@@ -1,0 +1,685 @@
+#------------------------------------------------------------------------------------------------------#
+# Last Edited By: #~!@#4493,new,eda,univariate,vasanth,08feb13,1723                                  --#
+#------------------------------------------------------------------------------------------------------#
+
+#------------------------------------------------------------------------------------------------------#
+#--                                                                                                  --#   
+#-- Project Name :  MRx_UnivariateAnalysis_AcrossGroupBy_1.0                                                --#
+#-- Descrption  :  Generates Univariate Summary                                                 --#
+#-- Return type  : Creates summary  of the variables selected                                                                                   --#
+#-- Author       : Jeevitha Gajendran                                                                 --#                 
+#------------------------------------------------------------------------------------------------------#
+library(moments)
+library(modeest)
+library(XML)
+library(tseries)
+dateformat<-function(date){
+  form<-NULL
+  temp<-as.character(date[1])
+  if(any(grepl("[[:alpha:]]",date) == "TRUE"))
+  {
+    return("unknown")
+  }
+  if(grepl(" ",temp)){
+    date<-apply(as.data.frame(date),1,function(x){strsplit(as.character(x)," ")[[1]][1]})
+  }
+  date<-as.character(date)
+  if (is.null(date))
+    return("unknown")  
+  if(is.na(mean(as.numeric(date),na.rm=T)) == "FALSE")
+  {
+    return("unknown")
+  }
+  if((length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == FALSE)))   &
+       (length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == FALSE))))
+    return("unknown")
+  if (all(is.na(date))) 
+    return(NA)
+  val<-length(date)
+  if(val > 100){val= 100}
+  date[which(date=='')] <- NA
+  if(!is.na(as.numeric(substr(date[1],1,4)))){
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],5,5)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[3,]))),na.rm=T)
+    if(max1 > 12 & max2 <= 12){form<-paste("%Y",split,"%d",split,"%m",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+  }else{
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],6-(10-nchar(date[1])),6-(10-nchar(date[1])))
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+  }
+  if(max(nchar(date)) <= 8)
+  {
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],nchar(date[1])-2,nchar(date[1])-2)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+  }
+  if(nchar(temp[1]) > 10 & nchar(temp[1]) <= 16){form<- paste(form," %H:%M",sep="")}
+  if(nchar(temp[1]) > 16){form<- paste(form," %H:%M:%S",sep="")}
+  return(form)
+}
+
+univariateSummary<-function(data)
+{
+    uni<-NULL
+    univarvector<-NULL      
+    subset.data<-data
+    mean<-mean(subset.data,na.rm=T)
+    stddev<-sd(subset.data,na.rm=T)
+    max<-max(subset.data,na.rm=T)
+    min<-min(subset.data,na.rm=T)
+    median<-median(subset.data,na.rm=T)
+    range<-max-min
+    observations_used<-length(data)
+    iqr<-IQR(subset.data) 
+    number_of_missing<-sum(is.na(subset.data))
+    uc <- sapply(subset.data,quantile,0.75) + (1.5 *(sapply(subset.data,IQR)))
+    lc<-sapply(subset.data,quantile,0.25)-(1.5*(sapply(subset.data,IQR)))
+    noofoutliers<-length(which(subset.data > uc | subset.data < lc))
+    no_of_zeros=sum(data==0)
+    mode<-(mlv(data, method = "mfv"))$M    
+    result<-data.frame(c(mean,stddev,max,min,median,range,observations_used,iqr,number_of_missing,noofoutliers,no_of_zeros,mode[1]))
+    names(result)="estimate"
+    statistic=c("mean","stddev","max","min","median","range","observations_used","iqr","number_of_missing","no_of_outliers","no_of_zeros","mode")
+    result<-cbind.data.frame(statistic,result)
+    return(result)
+} 
+#creating XML for univariate
+createXML<-function(result,uniqueValues,var.id)
+{
+#   Commented out because this was creating some other problems
+#     #-- #~!@#5338,new,eda,univariate,vasanth,25mar2013,1120
+#     # If the first element in thge selected panel is numeric, then prefixing with an underscore
+#     temp <- as.numeric(unlist(strsplit(x=uniqueValues,split="_"))[[1]][1])
+#     # Try starts here  
+#     try(
+#       if(!is.na(temp)){
+#         uniqueValues <- paste("_",uniqueValues,sep="")
+#       }
+#     ,silent=T)
+#     # Try ends here
+#     #-- #~!@#5338,new,eda,univariate,vasanth,25mar2013,1120
+    #unique_grp_var xml,uni_new_vars.xml
+	  len<-length(uniqueValues)
+	  tempUniqueValue<-uniqueValues
+	  tempUniqueValue<-gsub(c(" "),c("_"),tempUniqueValue)
+	  tempUniqueValue<-gsub(c("/"),c("_"),tempUniqueValue)
+	  acrossXml<-newXMLNode("TABLE")
+	  uni_new_xml<-newXMLNode("TABLE")
+	  for( i in 1:length(unique(panelCombined)))
+	  {
+		acrossXmlNode<-newXMLNode("UNIVARIATE",parent=acrossXml)
+		uni_new_xml_node<-newXMLNode("UNI_NEW_VARS",parent=uni_new_xml)
+		acrossxmlvalue<-newXMLNode("grp_variable",uniqueValues[i],parent=acrossXmlNode)
+		uni_new_xml_value<-newXMLNode("NAME",tempUniqueValue[i],parent=uni_new_xml_node)
+	  }  
+	  saveXML(acrossXml,paste(output_path,"unique_grp_var.xml",sep="/"))
+	  saveXML(uni_new_xml,paste(output_path,var.id,"uni_new_vars.xml",sep="/"))  
+	  #uni.xml
+		univarxml<- newXMLNode("TABLE")
+	  for(univarcount in 1:nrow(result))
+	  {
+		univarnode<-newXMLNode("UNIVARIATE",parent=univarxml)
+		univarvalue1<-newXMLNode("grp_variable",result[univarcount,1],parent=univarnode)
+		univarvalue2<-newXMLNode("statistic",result[univarcount,2],parent=univarnode)
+		univarvalue3<-newXMLNode("estimate",result[univarcount,3],parent=univarnode)
+	  }
+	  saveXML(univarxml,paste(output_path,var.id,"uni.xml",sep="/"))
+	  #uni_var xml
+	  result<-as.data.frame(result)     
+	  newresult<-result[with(result,order(statistic)),]
+	  #replacing the space with _
+	  newresult[1]<-gsub(" ","_",newresult[,1])
+	  newresult[1]<-gsub("/","_",newresult[,1])
+	  uni_var_xml<-newXMLNode("TABLE")
+	  count<-length(uniqueValues)
+	  univarcount=1
+	  while(univarcount<=nrow(newresult))
+	  {
+		uni_var_node<-newXMLNode("UNIVARIATE",parent=uni_var_xml)
+		uni_var_value1<-newXMLNode("statistic",newresult[univarcount,2],parent=uni_var_node)
+		for(uninodevalue in 1:length(uniqueValues))
+		{
+		  uni_var_value2<-newXMLNode(newresult[(univarcount+uninodevalue-1),1],newresult[(univarcount+uninodevalue-1),3],parent=uni_var_node)
+		}
+		univarcount<-univarcount+uninodevalue
+	  }
+		saveXML(uni_var_xml,paste(output_path,var.id,"uni_new.xml",sep="/"))
+}
+#box plot
+boxplotfun<-function(subset.data)
+{
+    box_mean<-mean(subset.data,na.rm=T)
+    p_100<-max(subset.data, na.rm=TRUE)
+    p_75<-quantile(subset.data,0.75)
+    p_50<-median(subset.data,na.rm=T)     
+    p_25<-quantile(subset.data,0.25)
+    p_0<-min(subset.data,na.rm=T)
+    result<-c(box_mean,p_100,p_75,p_50,p_25,p_0)
+    return(result)
+}
+# box plot XML
+createBoxPlotXml<-function(boxplotvector,uniqueValues,var.id,var.name)
+{
+  #boxplotxml
+  boxplotxml<-newXMLNode("TABLE")
+  noofcol<-ncol(boxplotvector)
+  for(boxIndex in 1:length(uniqueValues))
+  {
+    boxplotnode<-newXMLNode("BOXPLOT",parent=boxplotxml)
+    boxplotvalue1<-newXMLNode("variable", var.name, parent=boxplotnode)
+    boxplotvalue2<-newXMLNode("grp_variable", boxplotvector[boxIndex,noofcol], parent=boxplotnode)
+    boxplotvalue3<-newXMLNode("box_mean",boxplotvector[boxIndex,1], parent=boxplotnode)
+    boxplotvalue4<-newXMLNode("p_0",boxplotvector[boxIndex,noofcol-1], parent=boxplotnode)
+    boxplotvalue5<-newXMLNode("p_25",boxplotvector[boxIndex,noofcol-2], parent=boxplotnode)
+    boxplotvalue6<-newXMLNode("p_50", boxplotvector[boxIndex,noofcol-3], parent=boxplotnode)
+    boxplotvalue7<-newXMLNode("p_75", boxplotvector[boxIndex,noofcol-4], parent=boxplotnode)
+    boxplotvalue8<-newXMLNode("p_100", boxplotvector[boxIndex,2], parent=boxplotnode)
+  }
+  saveXML(boxplotxml,paste(output_path,var.id,"boxplot.xml",sep="/"))
+}
+
+#probability plot
+pplotFunction<-function(subset.data)
+{
+    prob_result<-NULL
+    tempResult<-NULL  
+    mu<-mean(subset.data,na.rm=T)
+    sdev<-sd(subset.data,na.rm=T)
+    for(tempIndex in 1 :100)
+    {
+      if(tempIndex==100)
+      {
+        break
+      }
+      else
+      {
+        pplot<- tempIndex/100
+        pplotvalue <- mu+(sdev*qnorm(pplot))
+        tempResult<-rbind(tempResult,cbind(pplot,pplotvalue))
+      }
+    }
+  return(tempResult)
+}   
+#std Error for acf and pacf
+standardError<-function(x,n)
+{
+  len=length(x)
+  stdResult<-NULL
+  if(len<=1)
+  {
+    return(0)
+  }
+  for(iterator in 1:len)
+  {
+    temp=c(1:iterator)
+    tempSqr=sqrt(sum(temp*temp) + 1)/n
+    stdResult=c(stdResult,tempSqr)
+  }
+  #result<-c(result,length(result))
+  return(stdResult)
+}
+#Seasonality function
+seasonalityFunction<-function(data)
+{
+  adfValues=NULL
+  
+  for(adflags in 0:2)
+  {
+    tempadf=try(adf.test(data,k=adflags),silent=TRUE)
+    if(class(tempadf)=="try-error")
+    {
+      tempadf=try(adf.test(data,k=0),silent=TRUE)
+    }
+    valLag=as.numeric(tempadf$parameter)
+    rhoVals=as.numeric(tempadf$statistic)
+    pval=as.numeric(tempadf$p.value)
+    tempVal=c(valLag,rhoVals,pval)
+    adfValues=rbind(adfValues,tempVal)
+  }
+  return(adfValues)
+}
+
+#white Noise Test
+whiteNoiseFunction<-function(data)
+{
+  boxValues<-NULL
+  for(boxlags in 1:4)
+  {
+    tempBox=Box.test(data,lag=(6*boxlags))
+    chiSqVal=as.numeric(tempBox$statistic)
+    DF=as.numeric(tempBox$parameter)
+    pval=as.numeric(tempBox$p.value)
+    tempVal=cbind(6*boxlags,chiSqVal,DF,pval)
+    boxValues<-rbind(boxValues,tempVal)
+  }
+  return(boxValues)
+}
+#unit root test
+unitRootFunction<-function(data)
+{
+  adfValues<-NULL
+  tempadf=try(adf.test(data,k=adflags),silent=TRUE)
+    if(class(tempadf)=="try-error")
+    {
+      tempadf=try(adf.test(data,k=0),silent=TRUE)
+    }
+  for(adflags in 0:2)
+  {
+    tempadf=adf.test(data,k=adflags)
+    valLag=as.numeric(tempadf$parameter)
+    rhoVals=as.numeric(tempadf$statistic)
+    pval=as.numeric(tempadf$p.value)
+    tempVal=c(valLag,rhoVals,pval)
+    adfValues=rbind(adfValues,tempVal)
+  }
+  return(adfValues)
+}
+#mean
+meanFunction<-function(subset.data)
+{
+  if(length(subset.data)<=1)
+  {
+    return(NULL)
+  }
+    quant<-quantile(subset.data,seq(0.05,1,0.05))
+    mean=apply(as.matrix(quant),1,function(x){mean(subset.data[which((subset.data<x)==TRUE)])})
+    stddev=apply(as.matrix(quant),1,function(x){sd(subset.data[which((subset.data<x)==TRUE)])})
+    percentile<-seq(5,100,5)
+    meanMat<-cbind.data.frame(mean,stddev,percentile)
+   names(meanMat)=c("mean","stddev","percentile")
+  row.names(meanMat)=NULL
+  return(meanMat)
+}
+
+#pacf 
+pacfFunction = function(subset.data)
+{
+  library(tseries)
+  #no_zeros<-length(which(subset.data!=0)==T)
+  
+   if(length(subset.data)<=1 | length(which(length(unique(subset.data)==1)==T)))
+  {
+    return(NULL)
+  }
+  val=pacf(x=subset.data,lag.max=24,plot=FALSE)
+  Lag=val$lag
+  Correlation=val$acf
+  StdErr=1.96/sqrt(length(subset.data))
+  StdErrX2=2*StdErr
+  Neg_StdErrX2 = -1*StdErrX2
+  result=cbind.data.frame(Lag,Correlation,StdErr,StdErrX2,Neg_StdErrX2)
+  return(result)
+}
+
+acfFunction = function(data)
+{
+  library(tseries)  
+  val=acf(x=as.numeric(data),lag.max=24,plot=FALSE)
+  Lag=val$lag
+  Correlation=val$acf
+  StdErr=standardError(x=Lag,n=length(data))
+  StdErrX2=2*StdErr
+  Neg_StdErrX2 = -1*StdErrX2
+  result=cbind.data.frame(Lag,Correlation,StdErr,StdErrX2,Neg_StdErrX2)
+  return(result)
+}
+
+# Flow start
+
+inputdata<-read.csv(paste(input_path,"dataworking.csv",sep="/"))   
+#-- #~!@#4493,new,eda,univariate,vasanth,08feb13,1723
+if(!exists('date_var')){
+  date_var<-NULL
+}else{
+  if(date_var=='') date_var<-NULL
+}
+#-- #~!@#4493,new,eda,univariate,vasanth,08feb13,1723
+#checks for NA values and replaces with zero if any
+inputdata[is.na(inputdata)] =0
+var_list<-unlist(strsplit(var_list,split=" "))
+newgrp_vars<-unlist(strsplit(grp_vars,split=" "))
+univar_subset<-inputdata[c(newgrp_vars,var_list)]
+panelCombined<-apply(univar_subset[newgrp_vars],1,function(x){ paste(x,collapse="_")})
+uniqPanels=unique(as.character(panelCombined))
+inputdata<-cbind(inputdata,panelCombined)
+#grp vars csv and xml 
+grp_names<-NULL
+grp_names["grp_variable"]<-as.data.frame(unique(panelCombined))
+write.csv(grp_names,paste(output_path,"unique_grp_var.csv",sep="/"),quote=F,row.names=F)
+
+  
+for(i in 1:length(var_list)){
+      
+  grp_names1<-as.data.frame(grp_names)
+  colnames(grp_names1)<-("NAME")
+  write.csv(grp_names1,paste(output_path,var_id[i],"uni_new_vars.csv",sep="/"),row.names=F,quote=F)
+  #---------------------------------------------------------------------------
+  #summary 
+  #---------------------------------------------------------------------------
+  result<-NULL
+  for(j in 1:length(uniqPanels)){      
+      data=subset(inputdata,panelCombined==uniqPanels[j])
+      res1<- univariateSummary(data[,var_list[i]])
+      res1$grp_variable=uniqPanels[j]
+      result=rbind.data.frame(result,res1)
+  }
+  colnames(result)<-c("statistic","estimate","grp_variable")
+  csvdata=result[c("grp_variable","statistic","estimate")]
+  write.csv(csvdata,paste(output_path,var_id[i],"uni.csv",sep="/"),row.names=F,quote=F)
+  uniqueGrpVar <- unique(csvdata$grp_variable)
+  basedataset <- matrix(as.character(unique(csvdata$statistic)),ncol=1)
+  colnames(basedataset) <- "statistic"
+  for(tempa in 1:length(uniqueGrpVar)){
+    tempdataset <- csvdata[csvdata$grp_variable==uniqueGrpVar[tempa],c("statistic","estimate")]
+    colnames(tempdataset)[2]<-uniqueGrpVar[tempa]
+    basedataset <- merge(x=basedataset,y=tempdataset,by.x="statistic",by.y="statistic")
+  }
+  write.csv(basedataset,paste(output_path,var_id[i],"uni_new.csv",sep="/"),row.names=F,quote=F)
+  write.csv(cbind.data.frame(result[3],result[1],result[2]),paste(output_path,"univarite.csv",sep="/"),row.names=F,quote=F)
+  write.csv(result,paste(output_path,var_id[i],"univarite.csv",sep="/"),row.names=F,quote=F)
+#   createXML(result=xmldata,uniqPanels,var_id[i])
+  #---------------------------------------------------------------------------
+  
+  #---------------------------------------------------------------------------
+  #box plot 
+  #---------------------------------------------------------------------------
+   result<-NULL
+  for(j in 1:length(uniqPanels))
+  {
+     data=subset(inputdata,panelCombined==uniqPanels[j])
+      res1<- boxplotfun(data[,var_list[i]])
+      result=rbind(result,res1)
+  }
+  result<-as.data.frame(result)      
+  result<-cbind.data.frame(result,uniqPanels)
+  names(result)<-c("box_mean","p_100","p_75","p_50","p_25","p_0","grp_variable")
+  write.csv(result,paste(output_path,var_id[i],"boxplot.csv",sep="/"),quote=F,row.names=F)
+  createBoxPlotXml(as.data.frame(result),uniqPanels,var_id[i],var_list[i])
+  #---------------------------------------------------------------------------
+  
+  #---------------------------------------------------------------------------
+  #time series
+  #---------------------------------------------------------------------------
+  data<-cbind.data.frame(inputdata[,var_list[i]],inputdata[date_var],inputdata["panelCombined"])
+  data<-data[order(data["panelCombined"]),]
+  result<-data
+  colnames(result)<-c(var_list[i],date_var,"grp_variable")
+  if (nrow(result) > 5500) {
+    for (n in 1:length(grp_names[["grp_variable"]])) {
+      x_temp  <- grp_names[["grp_variable"]][n]
+      df_temp <- subset(x = result, subset = grp_names[["grp_variable"]] == x_temp)
+      x_temp  <- dateformat(df_temp[,date_var])
+      x_temp  <- as.Date(x = as.character(df_temp[,date_var]),
+                         format = x_temp)
+      n_temp  <- order(x_temp)
+      
+      png(filename=paste(output_path,
+                         "/",
+                         var_id[i],
+                         "/timeseries",
+                         n,
+                         ".png",
+                         sep=""))
+      plot(x=x_temp[n_temp],
+           y=df_temp[n_temp,var_list[i]],
+           xlab=date_var,
+           ylab=var_list[i],
+           type="l",
+           col="#800000")
+      dev.off()
+    }
+  }
+  write.csv(result,paste(output_path,var_id[i],"timeseries.csv",sep="/"),quote=F,row.names=F)
+  #---------------------------------------------------------------------------
+  
+  #---------------------------------------------------------------------------
+  #histogram
+  #---------------------------------------------------------------------------
+  result<-NULL
+  for(j in 1:length(uniqPanels))
+  {
+    data<-subset(inputdata,panelCombined==uniqPanels[j])
+    histvector<-hist(data[,var_list[i]],plot=F)
+    histdf<-cbind(histvector$mids,histvector$counts,uniqPanels[j])
+    result<-rbind(result,histdf)
+  }
+  colnames(result)<-c("increment",  "frequency","grp_variable")
+  write.csv(result, file=paste(output_path, var_id[i], "histogram.csv", sep="/"), quote=FALSE, row.names=FALSE) 
+  histogramxml<-newXMLNode("TABLE")
+  for(histIndex in 1:nrow(result))
+  {
+  	histxmlnode<-newXMLNode("HISTOGRAM",parent=histogramxml)
+  	histxmlvalue1<-newXMLNode("increment",result[histIndex,1],parent=histxmlnode)
+  	histxmlvalue1<-newXMLNode("frequency",result[histIndex,2],parent=histxmlnode)
+  	histxmlvalue1<-newXMLNode("grp_variable",result[histIndex,3],parent=histxmlnode)
+  }
+  saveXML(histogramxml,paste(output_path,var_id[i],"histogram.xml",sep="/"))
+  #---------------------------------------------------------------------------
+  
+  #---------------------------------------------------------------------------
+  #run sequence
+  #---------------------------------------------------------------------------
+  result<-NULL
+  result<-cbind.data.frame(inputdata[,var_list[i]],inputdata["panelCombined"])
+  result<-result[order(result["panelCombined"]),]
+  result<-result[-3]
+  result<-cbind.data.frame(inputdata["primary_key_1644"],result)
+  colnames(result)<-c("primary_key","actual","grp_variable")
+  if (nrow(result) > 5500) {
+    for (n in 1:length(grp_names[["grp_variable"]])) {
+      x_temp  <- grp_names[["grp_variable"]][n]
+      df_temp <- subset(x = result, subset = grp_names[["grp_variable"]] == x_temp)
+      x_temp  <- order(df_temp[,"primary_key"])
+      df_temp <- df_temp[x_temp, , drop = FALSE]
+      
+      png(filename=paste(output_path,
+                         "/",
+                         var_id[i],
+                         "/runsequence",
+                         n,
+                         ".png",
+                         sep=""))
+      plot(x=df_temp[,"primary_key"],y=df_temp[,"actual"],xlab="primary_key",ylab="actual",type="n",col="#800000")
+      lines(x=df_temp[,"primary_key"],y=df_temp[,"actual"],xlab="primary_key",ylab="actual",type="l",col="#800000")
+      dev.off()
+    }
+  }
+  write.csv(result,paste(output_path,var_id[i],"runsequence.csv",sep="/"),quote=F,row.names=F)
+  #---------------------------------------------------------------------------
+  
+  #---------------------------------------------------------------------------
+  #prob plot
+  #---------------------------------------------------------------------------
+  result<-NULL
+  for(j in 1:length(uniqPanels))
+  {
+  	data<-subset(inputdata,panelCombined==uniqPanels[j])
+  	res1<-pplotFunction(data[,var_list[i]])
+  	result<-rbind(result,res1)
+  }
+  result<-cbind(result,rep(uniqPanels,each=99))
+  colnames(result)<-c("percentile","estimate","grp_variable")
+  result_prob <- data.frame(result)
+  result_prob<-result_prob[c(3,1,2)]
+  write.csv(result_prob, file=paste(output_path, var_id[i], "probplot.csv", sep="/"), quote=FALSE, row.names=FALSE)
+  pplotxml<-newXMLNode("TABLE",parent=NULL)
+  for(pcount in 1:nrow(result))
+  {
+  	pplotnode<-newXMLNode("PROBPLOT",parent=pplotxml)
+  	ppltnodevalue1<-newXMLNode("grp_variable",result[pcount,3],parent=pplotnode)
+  	ppltnodevalue1<-newXMLNode("percentile",result[pcount,1],parent=pplotnode)
+  	ppltnodevalue2<-newXMLNode("estimate",result[pcount,2],parent=pplotnode)
+  }
+  saveXML(pplotxml,file=paste(output_path,var_id[i],"probplot.xml",sep="/"),quote=F,row.names=F)
+  
+  #---------------------------------------------------------------------------
+  #acf Function
+  #---------------------------------------------------------------------------
+  result<-NULL
+  for(j in 1:length(uniqPanels))
+  {
+  data<-subset(inputdata,panelCombined==uniqPanels[j])
+  res1<-acfFunction(data=data[,var_list[i]])
+  res1$grp_variable=uniqPanels[j]
+  result<-rbind(result,res1)
+  }
+  
+  colnames(result)[6] <- ("grp_variable")
+  result["variable_name"] <- var_list[i]
+  result <- result[c("Lag","Correlation","variable_name","grp_variable","StdErr","StdErrX2","Neg_StdErrX2")]
+  write.csv(result,file=paste(output_path,var_id[i],"AutoCorrelation_Plot_Sample.csv",sep="/"),quote=F,row.names=F)
+  #---------------------------------------------------------------------------
+  
+  #---------------------------------------------------------------------------
+  #generating XML
+  #---------------------------------------------------------------------------
+  autocorrXML<-newXMLNode("TABLE",parent=NULL)
+  for(autocorrcount in 1:nrow(result))
+  {
+    autocorrnode<-newXMLNode("AUTOCORR",parent=autocorrXML)
+    autocorrvalue<-newXMLNode("grp_variable",result[autocorrcount,6],parent=autocorrnode)
+    autocorrvalue1<-newXMLNode("Lag",result[autocorrcount,1],parent=autocorrnode)
+    autocorrvalue2<-newXMLNode("Autocorr",result[autocorrcount,2],parent=autocorrnode)
+  }
+  saveXML(autocorrXML,paste(output_path,var_id[i],"autocorrplot.xml",sep="/"))
+  #---------------------------------------------------------------------------
+  
+  #---------------------------------------------------------------------------
+  #autocorr plot
+  #---------------------------------------------------------------------------
+  autoCorrCsv=result[c(2,6)]
+  names(autoCorrCsv)=c("Autocorr","grp_variable")
+  write.csv(autoCorrCsv,file=paste(output_path,var_id[i],"autocorrplot.csv",sep="/"),quote=F,row.names=F)   
+  #---------------------------------------------------------------------------
+  
+  #---------------------------------------------------------------------------
+  #seasonality
+  #---------------------------------------------------------------------------
+  result<-NULL
+  for(j in 1:length(uniqPanels))
+  {
+     data<-subset(inputdata,panelCombined==uniqPanels[j])
+     res1<-try(seasonalityFunction(data[,var_list[i]]),silent=TRUE)
+     if(class(res1)=="try-error")
+     {
+       res1=matrix(0,3,3)
+     }
+     res1=cbind(res1,uniqPanels[j])
+     result<-rbind(result,res1)
+  }
+  row.names(result)=NULL
+  result=as.data.frame(result)
+  result=cbind.data.frame(result,0,0,"Single Mean")
+  names(result)=c("Lags","Rho","ProbRho","grp_variable","Tau","ProbTau","Type")
+  col=c("Type","Lags","Rho","ProbRho","Tau","ProbTau","grp_variable")
+  result=result[col]
+  write.csv(result, file=paste(output_path, var_id[i], "SeasonalityTests.csv", sep="/"), quote=FALSE, row.names=FALSE)
+  #---------------------------------------------------------------------------
+  
+  #---------------------------------------------------------------------------
+  #white noise test
+  #---------------------------------------------------------------------------
+  result<-NULL
+  for(j in 1:length(uniqPanels))
+  {
+     data<-subset(inputdata,panelCombined==uniqPanels[j])
+     res1<-whiteNoiseFunction(data[,var_list[i]])
+     result<-rbind(result,res1)
+  }
+  result<-cbind(result,rep(0,nrow(result)),rep(0,nrow(result)),rep(0,nrow(result)),rep(0,nrow(result)),rep(0,nrow(result)),rep(0,nrow(result)),rep(uniqPanels,each=4))
+  colnames(result)<-c("ToLags","ChiSq","DF","ProbChiSq","One","Two","Three","Four","Five","Six","grp_variable")
+  write.csv(result, file=paste(output_path, var_id[i], "WhiteNoiseTest.csv", sep="/"), quote=FALSE, row.names=FALSE)
+  #---------------------------------------------------------------------------
+  
+  #---------------------------------------------------------------------------
+  #unit root
+  #---------------------------------------------------------------------------
+  result<-NULL
+  for(j in 1:length(uniqPanels))
+  {
+     data<-subset(inputdata,panelCombined==uniqPanels[j])
+     res1<-try(unitRootFunction(data[,var_list[i]]),silent=TRUE)
+     if(class(res1)=="try-error")
+     {
+       res1=matrix(0,3,3)
+     }
+     result<-rbind(result,res1)
+  }
+  result<-cbind(result,rep(0,nrow(result)),rep(0,nrow(result)),rep(0,nrow(result)),rep(0,nrow(result)),rep(0,nrow(result)),rep(uniqPanels,each=3))
+  colnames(result)<-c("Type","Lags","Rho","ProbRho","Tau","ProbTau","FValue","ProbF","grp_variable")
+  write.csv(result, file=paste(output_path, var_id[i], "UnitRootTests.csv", sep="/"), quote=FALSE, row.names=FALSE)
+  #---------------------------------------------------------------------------
+  
+  #---------------------------------------------------------------------------
+  #pacf plot
+  #---------------------------------------------------------------------------
+  result<-NULL
+  for(j in 1:length(uniqPanels))
+  {
+    data<-subset(inputdata,panelCombined==uniqPanels[j])
+    res1<-pacfFunction(subset.data=data[,var_list[i]])
+    if(is.null(res1)==FALSE)
+    {
+      res1$grp_variable=uniqPanels[j]
+    }
+    result<-rbind(result,res1)
+  }
+  write.csv(result,paste(output_path,var_id[i],"_Partial_ACF_Sample.csv",sep="/"),quote=F,row.names=F) 
+  #---------------------------------------------------------------------------
+  
+  #---------------------------------------------------------------------------
+  #percentile graph
+  result<-NULL
+  for(j in 1:length(uniqPanels))
+  {
+    data<-subset(inputdata,panelCombined==uniqPanels[j])
+    res1<-meanFunction(data[,var_list[i]])
+    if(is.null(res1)==F)
+    {
+      res1$grp_variable=uniqPanels[j]
+      result<-rbind.data.frame(result,res1)
+    }
+  }
+  if(nrow(result)==nrow(is.na(result)==T))
+  {
+    result$mean[result$mean=="NaN"]<-0
+    result[row.names(is.na(result)==T),2]<-0
+  }
+  result=na.omit(result)
+  result=result[order(result[,3]),]
+  result=cbind.data.frame(result,var_list[i])
+  names(result)[5]="variable"
+  col=c("grp_variable","mean","stddev","variable","percentile")
+  result=result[col]
+  write.csv(result,paste(output_path,var_id[i],"percentile.csv",sep="/"),quote=F,row.names=F)
+  percentilexml<-newXMLNode("TABLE")
+  for(tempIndex in 1:nrow(result))
+  {
+      percentilenode<-newXMLNode("PERCENTILE",parent=percentilexml)
+      for(xmlIndex in 1:ncol(result))
+      {
+        percentilevalue1<-newXMLNode(names(result[xmlIndex]),result[tempIndex,xmlIndex],parent=percentilenode)
+      }
+  }
+  saveXML(percentilexml,paste(output_path,var_id[i],"percentile.xml",sep="/"))
+  #---------------------------------------------------------------------------
+  
+}
+  
+
+write.table("EDA - UNIVARIATE_ACROSSGRPBY_COMPLETED",paste(output_path,"UNIVARIATE_ACROSSGRPBY_COMPLETED.txt",sep="/"),quote=F,row.names=F,col.names=F)

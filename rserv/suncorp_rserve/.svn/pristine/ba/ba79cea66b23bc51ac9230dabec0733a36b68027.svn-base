@@ -1,0 +1,390 @@
+
+#------------------------------------------------------------------------------------------------------#
+#--                                                                                                  --#   
+#-- Project Name :  Prop_Freq.R                                                            --#
+#-- Description  :  Proposition and Frequency                     --#
+#-- Return type  :  Creates CSV's at a location according to given inputs                            --#
+#-- Author       :  Arun.Pillai                                                               --#                 
+#------------------------------------------------------------------------------------------------------#
+
+library(Hmisc)
+
+
+
+# writing a function to recognise  a date format
+dateformat<-function(date){
+  form<-NULL
+  temp<-as.character(date[1])
+  if(any(grepl("[[:alpha:]]",date) == "TRUE"))
+  {
+    return("unknown")
+  }
+  if(grepl(" ",temp)){
+    date<-apply(as.data.frame(date),1,function(x){strsplit(as.character(x)," ")[[1]][1]})
+  }
+  date<-as.character(date)
+  if (is.null(date))
+    return("unknown")  
+  if(is.na(mean(as.numeric(date),na.rm=T)) == "FALSE")
+  {
+    return("unknown")
+  }
+  if((length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == FALSE)))   &
+       (length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == FALSE))))
+    return("unknown")
+  if (all(is.na(date))) 
+    return(NA)
+  val<-length(date)
+  if(val > 100){val= 100}
+  date[which(date=='')] <- NA
+  if(!is.na(as.numeric(substr(date[1],1,4)))){
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],5,5)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[3,]))),na.rm=T)
+    if(max1 > 12 & max2 <= 12){form<-paste("%Y",split,"%d",split,"%m",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+  }else{
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],6-(10-nchar(date[1])),6-(10-nchar(date[1])))
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+  }
+  if(max(nchar(date)) <= 8)
+  {
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],nchar(date[1])-2,nchar(date[1])-2)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+  }
+  if(nchar(temp[1]) > 10 & nchar(temp[1]) <= 16){form<- paste(form," %H:%M",sep="")}
+  if(nchar(temp[1]) > 16){form<- paste(form," %H:%M:%S",sep="")}
+  return(form)
+}
+
+# Reading the data
+#data=read.csv(paste(input_path,"dataworking.csv",sep="/"))
+load(paste(input_path,"dataworking.RData",sep="/"))
+data <- dataworking
+rm("dataworking")
+for(i in 1:length(num_vars))
+{
+  mean1<-mean(data[,which(colnames(data)==num_vars[i])],na.rm=TRUE)
+  k<-data[,which(colnames(data)==num_vars[i])]
+  data[which(is.na(k)==TRUE),which(colnames(data)==num_vars[i])]=mean1
+
+}
+
+
+binning_Function=function(variable,no_bins,bin_type){
+  
+  if(bin_type=="percentile"){  
+
+    options(scipen=15)
+    
+    result=as.data.frame(cbind(as.character(cut2(x=variable,g=as.numeric(no_bins))),variable))
+  
+    result[,1]=gsub(pattern=",",replacement=" - ",result[,1])
+    result[,1]=gsub(pattern="]",replacement=" ",result[,1])
+    result[,1]=gsub(pattern=")",replacement="",result[,1])
+    result[,1]=gsub(pattern="[[]",replacement="",result[,1])
+    
+  }
+  
+  if(bin_type=="data_order"){
+    options(scipen=15)
+    bin.length=as.numeric(length(variable)/as.numeric(no_bins))
+    bin.data=NULL
+    bins=NULL
+    init=1
+    end=NULL
+    for( i in 1:as.numeric(no_bins)){
+      end[i]=init+bin.length
+      init=end[i]
+    }
+    result=cbind.data.frame(as.character(cut2(x=1:length(variable),end)),variable)
+    result[,1]=gsub(pattern=",",replacement=" - ",result[,1])
+    result[,1]=gsub(pattern="]",replacement=" ",result[,1])
+    result[,1]=gsub(pattern=")",replacement="",result[,1])
+    result[,1]=gsub(pattern="[[]",replacement="",result[,1])
+    #write.csv(result,paste(output_path,"/binning_subsetViewpane.csv",sep=""),quote=F,row.names=F)
+  }
+  
+  if(bin_type=="equalsize"){
+    options(scipen=15)
+    bin.length=(max(variable)-min(variable))/as.numeric(no_bins)
+    bin.data=NULL
+    bins=rep(1,length(variable))
+    init=min(variable)
+    end=NULL
+    for( i in 1:as.numeric(no_bins)){
+      end[i]=init+bin.length
+      init=end[i]
+    }
+    
+    result=cbind.data.frame(as.character(cut2(x=variable,end)),variable)
+    result[,1]=gsub(pattern=",",replacement=" - ",result[,1])
+    result[,1]=gsub(pattern="]",replacement=" ",result[,1])
+    result[,1]=gsub(pattern=")",replacement="",result[,1])
+    result[,1]=gsub(pattern="[[]",replacement="",result[,1])
+    
+  }
+  
+  return(result)
+}
+
+#Frequency for categorical variable
+if(cat_vars!="")
+{
+  for(i in 1:length(cat_vars))
+  {
+    tempData=as.factor(data[,cat_vars[i]])
+    grpVal=summary(tempData)
+    grpVar=names(grpVal)
+    percent_obs=(grpVal/sum(grpVal)) * 100
+    cumm_obs = cumsum(grpVal)
+    n=nrow(data)
+    cumm_perc=(cumm_obs/n)*100
+    result=cbind.data.frame(grpVar,grpVal,percent_obs,cumm_obs,cumm_perc)
+    names(result)=c("Panel_Level","Total_Frequency","Total_Frequency_Percent","Cumulative_Frequency","Cumulative_Percent")
+    write.csv(result,paste(output_path,"/","categorical","/",cat_vars[i],".csv",sep=""),row.names=FALSE,quote=FALSE)
+  }
+}
+
+# Frequency for continuous Variable
+if(is.null(num_vars)!=TRUE)
+{  
+  for(i in 1:length(num_vars))
+  {
+    var=num_vars[i]
+    print(var)
+    # Creating the Binned Data
+    if(bin_type=="")
+    {
+      groupingVar=apply(data[grp_vars],1,function(x){paste(x,collapse="_")})
+      tempData=cbind.data.frame(data[,var],groupingVar)
+      names(tempData)=c("var","groupVar")
+    }
+    
+    #Subsetting the Data 
+    if(bin_type!="")
+    {
+      tempData=binning_Function(variable=data[,var],no_bins=as.numeric(no_bins),bin_type=bin_type)
+      names(tempData)=c("groupVar","var")
+    }
+    
+    if(time_var!="")
+    {
+      dateVal <- data[,time_var]
+      form    <- dateformat(dateVal)
+      d       <- as.Date(dateVal,format=form)
+#      ============================================
+
+      grpVar<- apply(cbind(as.numeric(format(d, format = "%Y")),as.character(format(d, format = "%m"))),1,FUN=function(x){paste(x,collapse="_")})
+#      ============================================
+     
+
+     if(time_window == 'YYQ6.')
+      {
+        grpVar=apply(cbind(quarters(d),as.numeric(format(d, format = "%Y"))),1,function(x){paste(x[2],"q",x[1],collapse="")})
+        grpVar=gsub(" q Q","q",grpVar)
+        
+      }
+      if(time_window == 'YEAR4.')
+      {
+        grpVar=as.numeric(format(d, format = "%Y"))
+      }
+      
+      tempData=cbind.data.frame(grpVar,data[,var]) 
+      names(tempData)=c("groupVar","var")
+    }
+    result=aggregate(tempData$var,by=list(tempData$groupVar),FUN="length")
+    min_res = aggregate(as.numeric(as.character(tempData$var)),by=list(tempData$groupVar),FUN="min")
+    min_res$x <- format(min_res$x,scientific=FALSE)    
+    max_res = aggregate(as.numeric(as.character(tempData$var)),by=list(tempData$groupVar),FUN="max")
+    max_res$x <- format(max_res$x,scientific=FALSE)
+#     ================
+    sorting_no <- order(result[1])
+if(time_var!="")
+{
+    sorting_no <- order(1:nrow(result))
+}
+
+#     ==========================================
+    result   <- result[sorting_no,]
+    min_res  <- min_res[sorting_no,]
+    max_res  <- max_res[sorting_no,]
+# ==============================================
+    if(bin_type=="data_order"){
+      bin_range <- unique(tempData[1])
+    }else{      
+      bin_range <- paste(min_res$x, max_res$x,sep=" - " )
+    }
+    
+    n=result$x
+    cumSum=cumsum(n)
+    cumsumPercent=(cumSum/(sum(n)))*100
+    percent=(n/sum(n))*100
+    if(time_var == "")
+    {
+      res = cbind.data.frame(result[1],result$x,var)
+      
+    }else{
+      res= cbind.data.frame(max_res[,1],result$x,var)
+      if(grepl("_",as.character(res[1,1])))
+      {
+        datatemp<-matrix(unlist(strsplit(as.character(res[,1]),"_")),ncol=2,byrow=T)
+        datatemp<-as.data.frame(apply(datatemp,2,as.numeric))
+#         res<-res[order(datatemp[,2],datatemp[,1]),]
+      }
+    }
+    names(res)=c("Panel_Level","Total_Frequency","Variable")
+   
+    if(time_var == "")
+    {
+      if(bin_type!="data_order"){
+        res <- res[sorting_no,]
+      }
+      if(bin_type=="data_order"){
+        res[,"Panel_Level"]<-as.character(res[,"Panel_Level"])
+        res[nrow(res),"Panel_Level"]<-paste(unlist(strsplit(res[nrow(res),"Panel_Level"],split="-",fixed=TRUE))[1],nrow(data),sep="- ")
+      }
+    }
+    #For Matching SAS and R
+# ===========================================================
+#     res <- cbind.data.frame(c(1:nrow(res)),res)
+#     res <- res[,-1]
+# =============================================================
+    #res=cbind.data.frame(result$Group.1,result$x,var,percent,cumSum,cumsumPercent)
+    #names(res)=c("grp_var","NOBS","Variable","percent_obs","cumm_obs","cumm_perc_obs")
+
+    
+    if(bin_type !="")
+    {
+      res = cbind.data.frame(row.names(res),res)
+      names(res)[c(1,2)]=c("Panel_Level","bin_range")
+    }
+    
+    if(flag_freq =='true')
+    {
+      freq_type = unlist(strsplit(freq_type,split=" ",fixed=TRUE))
+      if(sum(freq_type %in% ("total")) >0)
+      {
+        resN=cbind.data.frame(percent,cumSum,cumsumPercent)
+        names(resN)=c("Total_Frequency_Percent","Cumulative_Frequency","Cumulative_Percent")
+        resN <- resN[sorting_no,]
+        res = cbind.data.frame(res,resN)
+        print("1")     
+       
+      }
+      
+      if(sum(freq_type %in% c("unique"))>0)
+      {
+        
+        result1  <- tapply(tempData$var,tempData$groupVar,function(x){length(unique(x))})
+        result1  <- result1[sorting_no]
+        nobs=result1
+        cumSum=cumsum(nobs)
+        cumsumPercent=(cumSum/(sum(nobs)))*100
+        percent=(nobs/sum(nobs))*100
+        res1=cbind.data.frame(nobs,percent,cumSum,cumsumPercent)
+        names(res1)=c("Unique_Count","Unique_Percent","Cumulative_distinct","Cumulative_percent_distinct")
+        res=cbind.data.frame(res,res1)
+     
+        
+      }  
+      
+      index=which(names(res) %in% c("Variable"))
+      res=res[-index]
+      
+    }
+    
+    if(flag_prop=='true')
+    {
+      
+      if(flag_freq =='false')
+      {
+        res=res[-3]
+        
+      }
+      prop=NULL
+      for( k in 1:length(prop_type))
+      {
+        propres=NULL
+        if(prop_type[k]=="median"){
+          propres=as.matrix(tapply(as.numeric(as.character(tempData$var)),tempData$groupVar,median))
+          colnames(propres)="Median"
+        }
+        if(prop_type[k]=="mean"){
+          propres=as.matrix(tapply(as.numeric(as.character(tempData$var)),tempData$groupVar,mean))
+          colnames(propres)="Mean"
+        }
+        if(prop_type[k]=="stddev"){
+          propres=as.matrix(tapply(as.numeric(as.character(tempData$var)),tempData$groupVar,sd))
+          colnames(propres)="Standard_Deviation"
+        }
+        if(prop_type[k]=="range"){
+          propres=as.matrix(tapply(as.numeric(as.character(tempData$var)),tempData$groupVar,function(x){diff(range(x))}))
+          colnames(propres)="Range"
+        }
+        prop=cbind(prop,propres)
+      }
+      prop=as.data.frame(prop)
+      rownames(prop)=NULL
+      res=cbind.data.frame(res,prop)
+     
+      
+    }
+    if(time_var == "")
+    {
+      
+      if(no_bins!="")
+      {
+       
+       
+        res$Panel_Level <- sort(unique(as.character(tempData$groupVar)))
+      
+      }
+    }
+    
+    #     rearranging the column names as per the order in SAS
+    
+    orderofcol <- c("Panel_Level","Total_Frequency","Mean","Range","Median","Standard_Deviation","Total_Frequency_Percent",
+                  "Cumulative_Frequency","Cumulative_Percent","Unique_Count","Unique_Percent","Cumulative_distinct","Cumulative_percent_distinct")  	
+    curr_orderofcol<-names(res)    
+    index1<-which(orderofcol  %in% curr_orderofcol)
+   
+    res <-res[orderofcol[index1]]
+
+#     res <- res[order(res$Panel_Level),] 
+    write.csv(res,paste(output_path,"/","continuous","/",var,".csv",sep=""),row.names=FALSE,quote=FALSE)
+    
+  }
+}
+
+write("PROP_FREQ_COMPLETED",paste(output_path,"/PROP_FREQ_COMPLETED.txt",sep=""))
+
+
+
+# write.csv(tempData,paste(output_path,"/","continuous","/",var,".csv",sep=""),row.names=FALSE,quote=FALSE)
+
+
+
+
+
+
+
+
+
+
+

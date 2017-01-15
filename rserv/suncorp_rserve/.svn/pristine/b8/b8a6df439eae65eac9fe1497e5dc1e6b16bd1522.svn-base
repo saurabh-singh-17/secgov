@@ -1,0 +1,233 @@
+#---------------------------------------------------------------------------------------#
+#--                                                                                   --#
+#--  Project Name:   Text Mining                                                      --#
+#--  Task :          Task 1: Frequency Analysis                       	      		  --#
+#--  Sub-Task:       1.1 Generating word cloud                                        --#
+#--  version :       1.0 date: 14/03/2012 author: Gaurav Jain		          		  --#
+#---------------------------------------------------------------------------------------#
+
+
+# Defining some custom functions
+# 1. To install required packages
+# 2. To split text into tokens based on whitespaces
+#---------------------------------------------------------------------------------------
+
+
+is.installed <- function(pkg){ is.element(pkg, installed.packages()[,1])}
+
+strsplit_space_tokenizer <- function(x) unlist(strsplit(x, "[[:space:]]+"))
+
+
+
+
+
+
+freqAnalysis <- function(filePath, fileName, varName,
+                         ifVerbs = FALSE, ifNouns = FALSE, ifAdj = FALSE,
+                         reportLoc, freqCloudLoc, topCloudLoc,
+                         minWordLen = 3, minDocFreq = 1,
+                         findFreqTerms = FALSE, findTopTerms = FALSE,
+                         minimumFreq = 1, maximumFreq = Inf, numTerms = 25) {
+
+print(varName)
+if(!is.installed('RTextTools')){
+  install.packages('RTextTools',repo="http://lib.stat.cmu.edu/R/CRAN")
+  library('RTextTools')
+}
+if(!is.installed('wordcloud')){
+	install.packages('wordcloud',repo="http://lib.stat.cmu.edu/R/CRAN")
+	library('wordcloud')
+}
+if(!is.installed('RColorBrewer')){
+	install.packages('RColorBrewer',repo="http://lib.stat.cmu.edu/R/CRAN")
+	library('RColorBrewer')
+}
+
+  require('RTextTools')
+  require('wordcloud')
+  require('RColorBrewer')
+
+  # To read data from a csv file and create a dataset from required column(s)
+  #---------------------------------------------------------------------------------
+
+  fileLoc <- paste(filePath,fileName,sep="\\")
+
+  tmDataSet <- read_data(fileLoc,type="csv")
+  corpus = ""
+
+  if(!ifVerbs & !ifNouns & !ifAdj) {
+    varIndex <- which(colnames(tmDataSet)==varName)
+    corpus <- tolower(tmDataSet[,varIndex])
+  } else {
+    if(ifVerbs) {
+      varIndex <- which(colnames(tmDataSet)=='verbList')
+      corpus <- tolower(tmDataSet[,varIndex])
+    }
+    if(ifNouns) {
+
+      	varIndex <- which(colnames(tmDataSet)=='nounList')
+      	corpus <- paste(corpus,tolower(tmDataSet[,varIndex]),sep=" ")
+    }
+    if(ifAdj) {
+      varIndex <- which(colnames(tmDataSet)=='adjList')
+      corpus <- paste(corpus,tolower(tmDataSet[,varIndex]),sep=" ")
+    }
+  }
+
+  # To convert dataset into Plain text document
+  #----------------------------------------------------------------------------
+
+  doc <- PlainTextDocument(corpus)
+
+  # To remove punctuations from dataset
+  #----------------------------------------------------------------------------
+
+  doc <- removePunctuation(doc, preserve_intra_word_dashes = TRUE)
+
+  # To remove leading and trailing whitespaces
+  #----------------------------------------------------------------------------
+
+  doc = sub("^[[:space:]]*(.*?)[[:space:]]*$", "\\1", doc, perl=TRUE)
+
+  # Frequency calculation and sorting data based on count in descending order
+  # -------------------------------------------------------------------------
+
+  freqList <- termFreq(doc,
+              control = list(tokenize = strsplit_space_tokenizer,
+                             wordLengths = c(minWordLen, Inf)))
+
+  word = names(freqList)
+  freq <- as.numeric(freqList)
+
+  ap.d <- data.frame(word,freq)
+
+  ap.d.sorted <- ap.d[order(-freq,word),]
+
+  comment.count = nrow(tmDataSet)
+  unique.word.count = nrow(ap.d.sorted)
+  total.word.count = sum(ap.d.sorted$freq)
+
+  # Finding frequent terms between a frequency range
+  # -------------------------------------------------------------------------
+
+  if(findFreqTerms) {
+    freqTermsList <- subset(ap.d.sorted,ap.d.sorted$freq > minimumFreq &
+                            ap.d.sorted$freq < maximumFreq)
+
+    freqTermsList$freqShare <- round((freqTermsList$freq/total.word.count)*100,
+                                      digits=2)
+
+    x <- as.numeric(sapply(freqTermsList$word, function(str)
+                                      {str=paste(str," ",sep="")
+                                      length(subset(corpus, grepl(str, corpus)))},
+                                      simplify = TRUE, USE.NAMES = FALSE))
+
+    y <- as.numeric(sapply(freqTermsList$word, function(str)
+                                      {str=paste(" ",str,"$",sep="")
+                                      length(subset(corpus, grepl(str, corpus)))},
+                                      simplify = TRUE, USE.NAMES = FALSE))
+
+    freqTermsList$commentsPresent <- x + y
+
+    freqTermsList$commentShare <- round((freqTermsList$commentsPresent/comment.count)*100,
+                                      digits=2)
+
+    freqTermsList <- subset(freqTermsList, freqTermsList$commentsPresent >= minDocFreq)
+
+    # To write the frequency report in a csv
+    #----------------------------------------------------------------------------
+
+    write.csv(freqTermsList, file = reportLoc, append = FALSE, col.names = TRUE,
+            row.names = FALSE)
+
+    # Settings for word cloud image creation
+    # Creates a png in the specified directory
+    #---------------------------------------------------------------------------------------
+
+    pal2 <- brewer.pal(8,"Dark2")
+
+    png(freqCloudLoc, width=800, height=600)
+
+    wordcloud(freqTermsList$word, freqTermsList$freq, scale=c(8,.2), min.freq=1, max.words=Inf,random.order=FALSE,rot.per=.15, colors=pal2)
+
+    #---------------------------------------------------------------------------------------
+    # Closing time!
+    #---------------------------------------------------------------------------------------
+
+    dev.off()
+
+  }
+
+  # Finding topmost frequent terms
+  # -------------------------------------------------------------------------
+
+  if(findTopTerms) {
+
+    # numTerms = number of top terms
+    # -------------------------------
+
+    topTermsList <- ap.d.sorted[1:numTerms,]
+
+    topTermsList$freqShare <- round((topTermsList$freq/total.word.count)*100,
+                                      digits=2)
+
+    x <- sapply(topTermsList$word, function(str)
+                                      {str=paste(str," ",sep="")
+                                      length(subset(corpus, grepl(str, corpus)))},
+                                      simplify = TRUE, USE.NAMES = FALSE)
+
+    y <- sapply(topTermsList$word, function(str)
+                                      {str=paste(" ",str,"$",sep="")
+                                      length(subset(corpus, grepl(str, corpus)))},
+                                      simplify = TRUE, USE.NAMES = FALSE)
+
+    topTermsList$commentsPresent <- x + y
+
+    topTermsList$commentShare <- round((topTermsList$commentsPresent/comment.count)*100,
+                                      digits=2)
+
+    topTermsList <- subset(topTermsList, topTermsList$commentsPresent >= minDocFreq)
+
+    # To write the frequency report in a csv
+    #----------------------------------------------------------------------------
+
+    write.csv(topTermsList, file = reportLoc, append = FALSE, col.names = TRUE,
+            row.names = FALSE)
+
+    # Settings for word cloud image creation
+    # Creates a png in the specified directory
+    #---------------------------------------------------------------------------------------
+
+    pal2 <- brewer.pal(8,"Dark2")
+
+    png(topCloudLoc, width=800, height=600)
+	print(topTermsList$word)
+	print(topTermsList$freq)
+
+    wordcloud(topTermsList$word, topTermsList$freq, scale=c(8,.2), min.freq=1, max.words=Inf,random.order=FALSE,rot.per=.15, colors=pal2)
+
+    #---------------------------------------------------------------------------------------
+    # Closing time!
+    #---------------------------------------------------------------------------------------
+
+    dev.off()
+
+  }
+
+  returnStr <- paste(comment.count,total.word.count,unique.word.count,sep=",")
+
+  # To clear all variable used
+  #----------------------------------------------------------------------------
+
+  rm(list=c("filePath","fileName","fileLoc","varName","tmDataSet",
+            "corpus","varIndex","dataSize","pal2","topTermsList",
+            "freqTermsList","x","y","comment.count","unique.word.count",
+            "total.word.count","doc","word","freq","ap.d","ap.d.sorted",
+            "freqList","minimumFreq", "maximumFreq", "numTerms","minDocFreq",
+            "freqCloudLoc","topCloudLoc","minWordLen","reportLoc",
+            "strsplit_space_tokenizer"))
+
+
+  return(returnStr)
+
+}

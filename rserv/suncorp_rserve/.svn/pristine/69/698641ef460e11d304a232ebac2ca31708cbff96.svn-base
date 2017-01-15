@@ -1,0 +1,28 @@
+#------------------------------------------------------------------------------------------------------#
+#--                                                                                                  --#   
+#-- Project Name :  var_sort.R                                                                    --#
+#-- Description  :  sorts the result csv for bivariate
+#-- Return type  :  Generates csvs at given location                                                 --#
+#-- Author       :  Saurabh Vikash Singh                                                                    --#                 
+#------------------------------------------------------------------------------------------------------
+
+#parameteres------------------------------------------------------------------------------------------
+
+# csvname<-"geography"
+# var_order<-c("south","north")
+# input_path<-"C:/Users/payal.gupta/Mrx/r/pg_test-10-Oct-2013-14-20-24/1"
+
+data               <- read.csv(paste(input_path,"/",csvname,".csv",sep=""))
+index              <- NULL
+for(i in 1:length(var_order))
+{
+  index            <- c(index,which(data$level %in% var_order[i]))
+}
+data               <- data[index,]
+data               <- data[which(names(data) != "mx_internal_uid")]
+level_col_position <- which("level"==names(data))
+data               <- data[c(level_col_position,setdiff(1:ncol(data),level_col_position))]
+
+
+write.table(data, file = paste(input_path,"/",csvname,".csv",sep=""), sep = ",",row.names=F,quote=F)
+

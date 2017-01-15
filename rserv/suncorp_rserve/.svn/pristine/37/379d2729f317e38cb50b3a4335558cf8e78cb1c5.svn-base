@@ -1,0 +1,28 @@
+#---------------------------------------------------------------------------------------#
+#--                                                                                   --#
+#--  Project Name:   Text Mining                                                      --#
+#--  Task :          Task 1: Rserve Installation                      		      --#
+#--  Sub-Task:       1.1 Installs Rserve if, it's not there        		      --#
+#--  version :       1.0 date: 28/06/2012 author: 		          	      --#
+#---------------------------------------------------------------------------------------#
+
+
+
+#zz <- file("E:/error.Rout", open="wt")
+#yy<- file("E:/output.Rout", open="wt")
+#sink(zz,type="message")
+#sink(yy,type="output")
+
+
+#---Function to check installed packeges----#
+is.installed <- function(pkg){ 
+is.element(pkg, installed.packages()[,1])
+}
+
+#---checks for Packages---------------------#
+if(!is.installed('Rserve')){
+  install.packages('Rserve',repo="http://lib.stat.cmu.edu/R/CRAN")
+#library('Rserve')
+#Rserve()
+}
+

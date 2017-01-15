@@ -1,0 +1,393 @@
+#-------------------------------------------------------------------------------
+# function : logger
+#
+# dependencies
+# logFile, c_userName
+#
+# parameters
+# x              : string : message to be logged
+#
+# returns
+# void
+#-------------------------------------------------------------------------------
+logger <- function (x) {
+  if (!exists("logFile") | !exists("c_userName")) {
+    stop("There should exist character vectors <logFile> and <c_userName> both of length 1")
+  } else if (length(logFile) != 1 | length(c_userName) != 1) {
+    stop("There should exist character vectors <logFile> and <c_userName> both of length 1")
+  } else if (class(logFile) != "character" | class(c_userName) != "character") {
+    stop("There should exist character vectors <logFile> and <c_userName> both of length 1")
+  }
+  
+  x_temp <- paste(c_userName, " : ", Sys.time(), " : ", x, sep="")
+  write(x_temp, file = logFile, append = TRUE)
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# !!! customised for AES-CTR... WIP
+# function : decryptMessage
+#
+# dependencies
+# library(digest)
+#
+# parameters
+# x              : raw    : message to be decrypted
+# decryptionAlgo : string : algorithm to be used for decryption
+# decryptionKey  : string : key to be used for decryption
+# decryptionMode : string : mode for the decryption algo (optional)
+#
+# returns
+# decrypted      : string : message that is decrypted
+#-------------------------------------------------------------------------------
+decryptMessage <- function(x,
+                           decryptionAlgo,
+                           decryptionKey,
+                           decryptionMode) {
+  library(digest)
+  
+  switch(encryptionAlgo,
+         AES = {
+           n_indexIV      <- 1:length(encryptionKey)
+           n_indexMessage <- setdiff(x = 1:length(x),
+                                     y = n_indexIV)
+           aesObject      <- AES(IV = x[n_indexIV],
+                                 key = encryptionKey,
+                                 mode = encryptionMode)
+           decrypted      <- aesObject$decrypt(x[n_indexMessage])
+         })
+  return(decrypted)
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# !!! customised for AES-CTR... WIP
+# function : encryptMessage
+#
+# dependencies
+# library(digest)
+#
+# parameters
+# x              : string : message to be encrypted
+# encryptionAlgo : string : algorithm to be used for encryption
+# encryptionKey  : string : key to be used for encryption
+# encryptionMode : string : mode for the encryption algo (optional)
+#
+# returns
+# encrypted      : raw    : message that is encrypted
+#-------------------------------------------------------------------------------
+encryptMessage <- function(x,
+                           encryptionAlgo,
+                           encryptionKey,
+                           encryptionMode) {
+  library(digest)
+  
+  switch(encryptionAlgo,
+         AES = {
+           IV <- charToRaw(as.character(Sys.time()))
+           IV <- IV[sample(x = 1:length(IV),
+                           size = length(encryptionKey),
+                           replace = TRUE)]
+           aesObject <- AES(key=encryptionKey,
+                            mode=encryptionMode,
+                            IV=IV)
+           encrypted <- c(IV, aesObject$encrypt(x))
+         })
+  return(encrypted)
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# function : calculateChecksum
+#
+# dependencies
+# library(digest)
+#
+# parameters
+# x            : raw    : message for which checksum has to be generated
+# checkSumAlgo : string : algorithm to be used for checksum generation
+#
+# returns
+# checkSum     : raw    : checksum
+#-------------------------------------------------------------------------------
+calculateCheckSum <- function(x,
+                              checkSumAlgo) {
+  library(digest)
+  
+  checkSum <- digest(object = x,
+                     algo = checkSumAlgo,
+                     serialize = FALSE,
+                     raw = TRUE)
+  
+  return(checkSum)
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# function : returns the length of checksum depending on the algorithm used
+#
+# parameters
+# checkSumAlgo   : string  : algorithm to be used for checksum generation
+#
+# returns
+# checkSumLength : integer : length of the checksum that will be generated
+#-------------------------------------------------------------------------------
+getCheckSumLength <- function(checkSumAlgo) {
+  switch(checkSumAlgo, 
+         sha256 = {
+           checkSumLength <- 32L
+         },
+{
+  checkSumLength <- 0L
+})
+
+return(checkSumLength)
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# Function Name : errorMessageCode                                                         
+# Description   : compares error messages and returns them in a standard format
+# Return Type   : string
+# Author        : Arun Pillai                                                                              
+#-------------------------------------------------------------------------------
+errorMessageCode <- function(errorMessage)
+{
+  errorMessage = errorMessage[[1]]
+  errorMsg = gsub(pattern="\n",replacement="",x=errorMessage)
+  errorMsg = strsplit(x=errorMsg,split=":",fixed=T)[[1]][2]
+  result = paste("error**",errorMsg,sep="")
+  
+  if(length(grep(pattern="cannot open the connection",x=errorMsg,ignore.case=T))>0){
+    result = "error**The required file or directory does not exist"
+  }
+  
+  if(length(grep(pattern="No valid observations",x=errorMsg,ignore.case=T))>0){
+    result = "Information**No Valid Observations"
+  }
+  
+  if(length(grep(pattern="Not enough number of valid observations. There are only",x=errorMsg,ignore.case=T))>0){
+    result = "Information**Not enough number of valid observations. Number of observations should be greater than number of parameters"
+  }
+  
+  if(length(grep(pattern="Cannot build the model",x=errorMsg,ignore.case=T))>0){
+    result = "Information**Cannot build the model with current selection."
+    
+  }
+  
+  if(length(grep(pattern="No independent variable(s) to build model",x=errorMsg,ignore.case=T))>0){
+    result = "Information**No independent variable(s) to build model; Possibly all the variables are eliminated. Please recheck the condition and try again."
+  }
+  
+  if(length(grep(pattern=" Algorithm did not converge for the current selection",x=errorMsg,ignore.case=T))>0){
+    result = "Information**Algorithm did not converge for the current selection."
+  }
+  
+  if(length(grep(pattern="Cannot build model with only class variables",x=errorMsg,ignore.case=T))>0){
+    result = "Information**Cannot build model with only class variables."
+  }
+  
+  if(length(grep(pattern="Model cannot be run as there are no observations present",x=errorMsg,ignore.case=T))>0){
+    result = "Information**No Valid Observations"
+  }
+  
+  if(length(grep(pattern="only 1 unique level. Regression will not run",x=errorMsg,ignore.case=T))>0){
+    result = "Information**There is only one level of unique in the selected class variable(s). Regression will not run"
+  }
+  
+  if(length(grep(pattern="only 1 unique level. Regression will not run",x=errorMsg,ignore.case=T))>0){
+    result = "Information**There is only one level of unique in the selected class variable(s). Regression will not run"
+  }
+  
+  if(length(grep(pattern="Not enough observations in the",x=errorMsg,ignore.case=T))>0){
+    result = "Information**Not enough number of valid observations. Number of observations should be greater than number of parameters"
+  }
+  
+  if(length(grep(pattern="Forecasting not possible",x=errorMsg,ignore.case=T))>0){
+    result = "Information**Forecasting not possible.Lead entered exceed number of observations available for modeling."
+  }
+  
+  if(length(grep(pattern="System is computationally singular",x=errorMsg,ignore.case=T))>0){
+    result = "Information**Modelling cannot be performed with the selected variables as they are singular variables."
+  }
+  
+  if(length(grep(pattern="model contains fewer than 2 terms",x=errorMsg,ignore.case=T))>0){
+    result = "Information**There are singular variables in the model and vif cannot be generated. Please choose proper variables."
+  }
+  
+  if(length(grep(pattern="warning messgaes",x=errorMsg,ignore.case=T))>0){
+    result = "warning**warning messgaes."
+  }
+  
+  return(result)
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+#-- Code Name   : code_resultCaptuting
+#-- Description : execute the source code and returns success if completed
+#--               else it returns appropriate error messages
+#-- Output Type : <NA>
+#-- Author      : Arun Pillai
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# libraries required
+#-------------------------------------------------------------------------------
+if (!capabilities(what = "X11")) {
+  options(bitmapType = "cairo")
+}
+.libPaths('/home/product/murx/libraries')
+library(base64enc)
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# settings for encryption/decryption
+#-------------------------------------------------------------------------------
+checkSumAlgo   <- "sha256"
+encryptionAlgo <- "AES"
+encryptionKey  <- charToRaw("abcdefghijklmnop")
+encryptionMode <- "CTR"
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# find out the parameters
+#-------------------------------------------------------------------------------
+# ideation1 : encrypted message
+if(exists("ideation1")) {
+  # converting formatted string to base 64 encoded hex
+  encryptedMessage <- as.raw(as.hexmode(strsplit(x=ideation1, split=" ")[[1]]))
+  # converting base 64 encoded hex to base 64 decoded hex
+  encryptedMessage <- base64decode(what=rawToChar(encryptedMessage))
+  # index of the checksum
+  x_temp <- getCheckSumLength(checkSumAlgo)
+  l_indexCheckSum <- rep(x = c(FALSE,
+                               TRUE),
+                         times = c(length(encryptedMessage) - x_temp,
+                                   x_temp))
+  # extracting the checksum from base 64 decoded hex
+  checkSum         <- encryptedMessage[l_indexCheckSum]
+  # extracting the encrypted message from base 64 decoded hex
+  encryptedMessage <- encryptedMessage[!l_indexCheckSum]
+  
+  # match the checkSum
+  if(any(calculateCheckSum(encryptedMessage, checkSumAlgo) != checkSum)) {
+    resultString <- "Checksum mismatch"
+    stop(resultString)
+  }
+  
+  # decrypting base 64 decoded hex to string
+  decryptedMessage <- decryptMessage(x = encryptedMessage,
+                                     decryptionAlgo = encryptionAlgo,
+                                     decryptionKey = encryptionKey,
+                                     decryptionMode = encryptionMode)
+  parameters <- decryptedMessage
+  b_encryption <- 1
+} else {  # ideation2 : non encrypted message
+  parameters <- ideation2
+  b_encryption <- 0
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# evaluate the parameters and get the userName
+#-------------------------------------------------------------------------------
+eval(parse(text = parameters))
+c_userName <- regmatches(x = loginDetails,
+                         m = gregexpr(pattern = "User Name =(.*)?,",
+                                      text = loginDetails))[[1]]
+c_userName <- gsub(pattern = "User Name =(.*)?,",
+                   replacement = "\\1",
+                   x = c_userName)
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# food for log
+#-------------------------------------------------------------------------------
+write(x = "\n", file = logFile, append = TRUE)
+logger("resultCapturing starts...")
+if (exists("ideation1")) {
+  logger(ideation1)
+}
+logger(parameters)
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# call the module's R code and update resultString accordingly
+#-------------------------------------------------------------------------------
+# call the module's R code
+x_temp <- try(expr = {
+  codes <- unlist(strsplit(codeFile,"|",fixed=TRUE))
+  sapply(X = codes,
+         FUN = source)
+},
+silent = TRUE)
+
+# update resultString accordingly
+if(class(x_temp) == "try-error") {
+  resultString <- errorMessageCode(errorMessage=x_temp)  
+} else {
+  resultString <- "success"
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# encrypt the resultString if necessary
+#-------------------------------------------------------------------------------
+if(b_encryption) {
+  encryptedMessage <- encryptMessage(x = resultString,
+                                     encryptionAlgo = encryptionAlgo,
+                                     encryptionKey = encryptionKey,
+                                     encryptionMode = encryptionMode)
+  encryptedMessage <- c(encryptedMessage,
+                        calculateCheckSum(encryptedMessage, checkSumAlgo))
+  encryptedMessage <- base64encode(what=encryptedMessage)
+  encryptedMessage <- paste(charToRaw(encryptedMessage), collapse=" ")
+  resultString     <- encryptedMessage
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# food for log
+#-------------------------------------------------------------------------------
+logger(resultString)
+logger("code_resultCapturing ends...")
+write(x = "\n", file = logFile, append = TRUE)
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# keep only the resultString in the memory
+#-------------------------------------------------------------------------------
+rm(list=setdiff(x = ls(),
+                y = "resultString"))
+#-------------------------------------------------------------------------------

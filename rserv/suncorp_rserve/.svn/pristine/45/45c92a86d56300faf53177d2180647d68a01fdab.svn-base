@@ -1,0 +1,413 @@
+#-------------------------------------------------------------------------------
+# parameters needed
+#-------------------------------------------------------------------------------
+# c_text_filter_dc               : dataset common filter_condition
+# c_text_filter_vs               : variable specific filter_condition
+# c_text_sort                    : sort_condition
+# c_var_date_sort_filter         : date variables used in the above conditions
+
+# filter_condition               : <variable> <inequality> (<value>)
+# sort_condition                 : by <variable> asc|desc top <number> |% obs
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# sample parameters
+#-------------------------------------------------------------------------------
+# c_text_filter_dc               <- c("<filter_condition>",
+#                                     "(<filter_condition>) AND (<filter_condition>)",
+#                                     "(<filter_condition>) OR  (<filter_condition>)")
+# c_text_filter_vs               <- c("<filter_condition>",
+#                                     "(<filter_condition>) AND (<filter_condition>)",
+#                                     "(<filter_condition>) OR  (<filter_condition>)")
+# c_text_sort                    <- c("<sort_condition>",
+#                                     "(<sort_condition>) THEN (<sort_condition>)")
+# c_var_date_sort_filter         <- c("<variable>")
+
+# c_text_filter_dc                 <- c("sales > (10)")
+# c_text_filter_vs                 <- c("geography IN ('south')")
+# c_text_sort                      <- c("(by geography asc top 100 % obs) THEN (by sales desc top 1000 obs)",
+#                                       "(by geography asc top 100 % obs) THEN (by Total_Selling_Area desc top 100 % obs)")
+# c_var_date_sort_filter           <- c("Date")
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# function : to recognise date format of a string
+#-------------------------------------------------------------------------------
+dateformat<-function(date){
+  index<-(which(date==""))
+  if (length(index)!=0){
+    date<-date[-index]
+  }
+  form<-"unknown"
+  temp<-as.character(date[1])
+  if(any(grepl("[[:alpha:]]",date) == "TRUE"))
+  {
+    return("unknown")
+  }
+  if(grepl(" ",temp)){
+    date<-apply(as.data.frame(date),1,function(x){strsplit(as.character(x)," ")[[1]][1]})
+  }
+  date<-as.character(date)
+  if (is.null(date))
+    return("unknown")  
+  if(is.na(mean(as.numeric(date),na.rm=T)) == "FALSE")
+  {
+    return("unknown")
+  }
+  if((length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == FALSE)))   &
+       (length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == FALSE))))
+    return("unknown")
+  if (all(is.na(date))) 
+    return(NA)
+  val<-length(date)
+  if(val > 100){val= 100}
+  date[which(date=='')] <- NA
+  if(!is.na(as.numeric(substr(date[1],1,4)))){
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],5,5)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[3,]))),na.rm=T)
+    if(max1 > 12 & max2 <= 12){form<-paste("%Y",split,"%d",split,"%m",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+  }else{
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],6-(10-nchar(date[1])),6-(10-nchar(date[1])))
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+  }
+  if(max(nchar(date)) <= 8)
+  {
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],nchar(date[1])-2,nchar(date[1])-2)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+  }
+  if(nchar(temp[1]) > 10 & nchar(temp[1]) <= 16){form<- paste(form," %H:%M",sep="")}
+  if(nchar(temp[1]) > 16){form<- paste(form," %H:%M:%S",sep="")}
+  return(form)
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# function : notin
+#-------------------------------------------------------------------------------
+`%notin%` <- function(x, table) {
+  match(x, table, nomatch = 0L) == 0L
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# function xx : to convert filter text to evaluatable condition
+#-------------------------------------------------------------------------------
+muRx_filter_text_to_eval         <- function(c_text_filter) {
+  if (!length(c_text_filter)) {
+    return(NULL)
+  }
+  
+  muRx_convenience_temp          <- function() {
+    gsub(pattern=pattern,
+         replacement=replacement,
+         x=c_eval_filter)
+  }
+  
+  c_eval_filter             <- c_text_filter
+  pattern                        <- "\\) AND \\("
+  replacement                    <- "\\) & \\("
+  c_eval_filter             <- muRx_convenience_temp()
+  pattern                        <- "\\) OR \\("
+  replacement                    <- "\\) | \\("
+  c_eval_filter             <- muRx_convenience_temp()
+  pattern                        <- "NOT IN \\("
+  replacement                    <- "%notin% \\("
+  c_eval_filter             <- muRx_convenience_temp()
+  pattern                        <- "IN \\("
+  replacement                    <- "%in% \\("
+  c_eval_filter             <- muRx_convenience_temp()
+  pattern                        <- "('[0-9]{2}[A-Za-z]{3}[0-9]{4}')d"
+  replacement                    <- "as.Date\\(\\1, format='%d%B%Y'\\)"
+  c_eval_filter             <- muRx_convenience_temp()
+  pattern                        <- "(>|>=|<|<=|%in%|%notin%) \\("
+  replacement                    <- "\\1 c\\("
+  c_eval_filter             <- muRx_convenience_temp()
+  pattern                        <- " = "
+  replacement                    <- " == "
+  c_eval_filter             <- muRx_convenience_temp()
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# function xx : subset evaluatable inequalities
+# input 01    : vector (character) of evaluatable inequalities
+# input 02    : variables
+# input 03    : all/any
+# return      : vector (character) of evaluatable inequalities
+# description : subsets based on the presence of all/any of the given variables
+#-------------------------------------------------------------------------------
+muRx_subset_eval_ineq            <- function(c_eval_ineq,
+                                             c_var_required,
+                                             c_fun_type) {
+  ret                            <- character(0)
+  
+  if (!length(c_eval_ineq)) {
+    stop("c_eval_ineq is of length 0 in muRx_subset_eval_ineq()",
+         call.=TRUE)
+  }
+  if (!length(c_var_required)) {
+    stop("c_var_required is of length 0 in muRx_subset_eval_ineq()",
+         call.=TRUE)
+  }
+  if (!length(c_fun_type)) {
+    stop("c_fun_type is of length 0 in muRx_subset_eval_ineq()",
+         call.=TRUE)
+  }
+  if (c_fun_type != "all" & c_fun_type != "any") {
+    stop("Invalid value in c_fun_type in muRx_subset_eval_ineq().
+         Allowed values are 'all' and 'any'",
+         call.=TRUE)
+  }
+  
+  FUN                            <- function (x) {
+    all.vars(as.formula(paste("~", x, sep="")))
+  }
+  list_var_ineq                  <- lapply(X=c_eval_ineq, FUN=FUN)
+  FUN                            <- function (x) {
+    f                            <- match.fun(FUN=c_fun_type)
+    f(x %in% c_var_required)
+  }
+  x_temp                         <- sapply(X=list_var_ineq, FUN=FUN)
+  ret                            <- c_eval_ineq[x_temp]
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# function xx : evaluate the given conditions and filter the data.frame
+#-------------------------------------------------------------------------------
+muRx_filter <- function(df_x, c_eval_filter) {
+  
+  if (!length(c_eval_filter)) return(df_x)
+  
+  text                           <- c_eval_filter
+  text                           <- paste(text,
+                                          collapse=",",
+                                          sep="")
+  text                           <- paste("data.frame(",
+                                          text, 
+                                          ")",
+                                          collapse="",
+                                          sep="")
+  df_condition                   <- eval(parse(text=text),
+                                         envir=df_x)
+  colnames(df_condition)         <- paste("l_murx_",
+                                          1:ncol(df_condition),
+                                          sep="")
+  text                           <- paste(colnames(df_condition),
+                                          collapse="&")
+  subset                         <- eval(parse(text=text),
+                                         envir=df_condition)
+  df_x                           <- subset(x=df_x,
+                                           subset=subset)
+  
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# function : sort a data.frame by a <variable> then take top <number> obs
+#-------------------------------------------------------------------------------
+muRx_sort_1 <- function(df_x,
+                        c_var_sort_by,
+                        l_decreasing=FALSE,
+                        n_obs=NULL,
+                        n_pct_obs=NULL) {
+  
+  if (is.null(n_obs)) {
+    n_obs                          <- round(nrow(df_x) * n_pct_obs / 100)
+  }
+  if (n_obs == 0) {
+    n_obs                          <- 1 
+  }
+  
+  c_temp                           <- paste("order(",
+                                            c_var_sort_by,
+                                            ", decreasing=",
+                                            l_decreasing,
+                                            ")",
+                                            sep="")
+  n_index                         <- eval(parse(text=c_temp),
+                                          envir=df_x)
+  n_index                         <- n_index[1:min(n_obs, length(n_index))]
+  df_x                            <- df_x[n_index, ]
+  
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# function : sort a data.frame by a <variable> then take top <number> obs
+#-------------------------------------------------------------------------------
+muRx_sort <- function(df_x, c_text_sort) {
+  
+  if (!length(c_text_sort)) return(df_x)
+  
+  #-----------------------------------------------------------------------------
+  # function : add "#"
+  #-----------------------------------------------------------------------------
+  FUN <- function(x) {
+    if ("%" %in% x ) return(x)
+    x                            <- c(x, "#")
+  }
+  #-----------------------------------------------------------------------------
+  
+  for (n_i_sort in 1:length(c_text_sort)) {
+    x_temp                       <- c_text_sort[n_i_sort]
+    x_temp                       <- unlist(strsplit(x=x_temp,
+                                                    split="\\) THEN \\("))
+    x_temp                       <- gsub(pattern="\\)",
+                                         replacement="",
+                                         x=x_temp)
+    x_temp                       <- gsub(pattern="\\(",
+                                         replacement="",
+                                         x=x_temp)
+    x_temp                       <- gsub(pattern="^BY ",
+                                         replacement="",
+                                         x=x_temp)
+    x_temp                       <- gsub(pattern=" top ",
+                                         replacement=" ",
+                                         x=x_temp)
+    x_temp                       <- gsub(pattern=" obs$",
+                                         replacement="",
+                                         x=x_temp)
+    x_temp                       <- strsplit(x=x_temp,
+                                             split=" ")
+    x_temp                       <- lapply(X=x_temp,
+                                           FUN=FUN)
+    df_text_sort_now             <- t(data.frame(x_temp,
+                                                 stringsAsFactors=FALSE))
+    colnames(df_text_sort_now)   <- c("c_var_sort_by",
+                                      "c_sort_order",
+                                      "c_n",
+                                      "c_n_type")
+    rownames(df_text_sort_now)   <- NULL
+    for (n_i_rownum in 1:nrow(df_text_sort_now)) {
+      if (n_i_rownum == 1) {
+        INDICES                  <- "rep(1, nrow(df_x))"
+      } else {
+        INDICES                  <- df_text_sort_now[1:(n_i_rownum - 1),
+                                                     "c_var_sort_by"]
+        INDICES                  <- paste(INDICES,
+                                          collapse=",",
+                                          sep="") 
+      }
+      INDICES                    <- paste("list(",
+                                          INDICES,
+                                          ")",
+                                          sep="")
+      INDICES                    <- eval(parse(text=INDICES),
+                                         envir=df_x)
+      l_decreasing               <- FALSE
+      c_sort_order               <- df_text_sort_now[n_i_rownum,
+                                                     "c_sort_order"]
+      if (c_sort_order == "desc") {
+        l_decreasing             <- TRUE
+      } 
+      c_var_sort_by              <- df_text_sort_now[n_i_rownum,
+                                                     "c_var_sort_by"]
+      n_obs                      <- NULL
+      n_pct_obs                  <- NULL
+      if (df_text_sort_now[n_i_rownum, "c_n_type"] == "#") {
+        n_obs                    <- as.integer(df_text_sort_now[n_i_rownum, 
+                                                                "c_n"])
+      }
+      if (df_text_sort_now[n_i_rownum, "c_n_type"] == "%") {
+        n_pct_obs                <- as.integer(df_text_sort_now[n_i_rownum,
+                                                                "c_n"])
+      }
+      x_temp                     <- by(data=df_x,
+                                       INDICES=INDICES,
+                                       FUN=muRx_sort_1,
+                                       c_var_sort_by=c_var_sort_by,
+                                       l_decreasing=l_decreasing,
+                                       n_obs=n_obs,
+                                       n_pct_obs=n_pct_obs)
+      df_x                       <- do.call(what=rbind.data.frame,
+                                            args=x_temp)
+    }
+  }
+  return(df_x)
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# function xx : filter and then sort
+#-------------------------------------------------------------------------------
+muRx_filter_sort                 <- function(df_x,
+                                             c_text_filter_dc,
+                                             c_text_filter_vs,
+                                             c_text_sort,
+                                             c_var_date_sort_filter,
+                                             c_var_required) {
+  # initialising
+  c_eval_filter                  <- NULL
+  c_eval_filter_dc               <- NULL
+  c_eval_filter_vs               <- NULL
+
+  # recognising the date variables
+  if (length(c_var_date_sort_filter)) {
+    for (n_i_var_filter_date in 1:length(c_var_date_sort_filter)) {
+      c_temp                     <- c_var_date_sort_filter[n_i_var_filter_date]
+      format                     <- dateformat(df_x[, c_temp])
+      df_x[, c_temp]             <- as.Date(x=df_x[, c_temp],
+                                            format=format)
+    }
+  }
+
+  # dataset common filter conditions
+  if (length(c_text_filter_dc)) {
+    c_eval_filter_dc             <- muRx_filter_text_to_eval(c_text_filter_dc)     
+  }
+  # variable specific filter conditions
+  if (length(c_text_filter_vs)) {
+    c_eval_filter_vs             <- muRx_filter_text_to_eval(c_text_filter_vs)
+    c_eval_filter_vs             <- muRx_subset_eval_ineq(c_eval_filter_vs,
+                                                          c_var_required,
+                                                          "all")
+  }
+  c_eval_filter                  <- c(c_eval_filter_dc, c_eval_filter_vs)
+
+  # filtering the data
+  df_x                           <- muRx_filter(df_x=df_x,
+                                                c_eval_filter=c_eval_filter)
+
+  # sorting the data
+  df_x                           <- muRx_sort(df_x=df_x,
+                                              c_text_sort=c_text_sort)
+  
+  return(df_x)
+}
+#-------------------------------------------------------------------------------

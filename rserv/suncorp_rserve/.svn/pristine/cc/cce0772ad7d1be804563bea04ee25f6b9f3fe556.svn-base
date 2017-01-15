@@ -1,0 +1,43 @@
+#==================================================================================
+# Required Parameters for this code:
+#==================================================================================
+# inputPath        <- "C:/Users/Anvita.srivastava/MRx/r/text20-25-Aug-2014-11-56-04/1"
+# c_var_in         <- "Verbatim"
+# c_find           <- "you"
+# c_prefix         <- "pre"
+#==================================================================================
+
+library(tau)
+library(stringi)
+
+#==================================================================================
+# loading/reading the csv file 
+#================================================================================== 
+load(file=paste(inputPath, "/", "dataworking.RData", sep=""))
+
+#changing the encoding of data for further processing
+index_true<-which(is.locale(as.character(dataworking[,c_var_in])) == "FALSE")
+if(length(index_true))
+{
+  dataworking[index_true,c_var_in]<-iconv(as.character(dataworking[index_true,c_var_in]),from="latin1" ,to = "UTF-8")
+}
+
+#==================================================================================
+# creating the new variable name
+#================================================================================== 
+c_new_var <- paste(c_prefix,c_var_in,sep="_")
+
+dataworking[,c_new_var] <- 0
+dataworking[grepl(pattern=tolower(c_find),x=tolower(dataworking[,c_var_in]),fixed=T),c_new_var]=1
+
+#------------------------------------------------------------------------------
+# Saving the dataset as dataworking.RData
+#------------------------------------------------------------------------------
+save(dataworking,file=paste(inputPath,"/dataworking.RData",sep=""))
+
+
+#==================================================================================
+# completed txt
+#==================================================================================
+write("Create Indicators Completed", file=paste(inputPath, "/","CREATE_IND_COMPLETED.txt", sep=""))
+#==================================================================================

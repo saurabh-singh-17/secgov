@@ -1,0 +1,129 @@
+#===============================================================================#
+#Author Name and Date:Snigdha Banerjee - I&D20110414
+#Function Name: splitInputExpression
+#Signature: splitInputExpression=function(input_expn)
+#Description: split the input string and do some logical operation with this 
+#Return type: string 
+source("param_arithmeticExpression.R")
+
+#===============================================================================#
+splitInputExpression=function(input_expn)
+{
+  options(warn=-1)
+  #split the input string into characters
+  str_split=strsplit(input_expn,"")[[1]] 
+  #temporary string  
+  tmp_str=c()                                                                                                                                                                 
+  final_trans=c()
+  #transformed string
+  tmp_arr=c()      
+  #counters
+  ctr2=1;ctr3=1;ctr6=1                                                                      
+  flag=0
+  #finding column names
+  for(ctr1 in 1:length(str_split))                                     
+  {
+    if(str_split[ctr1]=="(")
+      next
+    else if(str_split[ctr1]=="l" && str_split[ctr1+1]=="o" && str_split[ctr1+2]=="g" && str_split[ctr1+3]=="(")
+      next
+    else if(str_split[ctr1-1]=="l" && str_split[ctr1]=="o" && str_split[ctr1+1]=="g" && str_split[ctr1+2]=="(")
+      next
+    else if(str_split[ctr1-2]=="l" && str_split[ctr1-1]=="o" && str_split[ctr1]=="g" && str_split[ctr1+1]=="(")
+      next
+    else if(str_split[ctr1]=="e" && str_split[ctr1+1]=="x" && str_split[ctr1+2]=="p" && str_split[ctr1+3]=="(")
+      next
+    else if(str_split[ctr1-1]=="e" && str_split[ctr1]=="x" && str_split[ctr1+1]=="p" && str_split[ctr1+2]=="(")
+      next
+    else if(str_split[ctr1-2]=="e" && str_split[ctr1-1]=="x" && str_split[ctr1]=="p" && str_split[ctr1+1]=="(")
+      next 
+    else if(str_split[ctr1]=="s" && str_split[ctr1+1]=="q" && str_split[ctr1+2]=="r" && str_split[ctr1+3]=="t" && str_split[ctr1+4]=="(")
+      next
+    else if(str_split[ctr1-1]=="s" && str_split[ctr1]=="q" && str_split[ctr1+1]=="r" && str_split[ctr1+2]=="t" && str_split[ctr1+3]=="(")
+      next
+    else if(str_split[ctr1-2]=="s" && str_split[ctr1-1]=="q" && str_split[ctr1]=="r" && str_split[ctr1+1]=="t" && str_split[ctr1+2]=="(")
+      next 
+    else if(str_split[ctr1-3]=="s" && str_split[ctr1-2]=="q" && str_split[ctr1-1]=="r" && str_split[ctr1]=="t" && str_split[ctr1+1]=="(")
+      next                                 
+    else if((str_split[ctr1]==")"  && str_split[ctr1-1]!=")") || ((str_split[ctr1]=="+" || str_split[ctr1]=="-" || str_split[ctr1]=="*" || str_split[ctr1]=="/" || str_split[ctr1]=="^" ) && (str_split[ctr1-1]=="0" || str_split[ctr1-1]=="1" || str_split[ctr1-1]=="2" || str_split[ctr1-1]=="3" || str_split[ctr1-1]=="4" || str_split[ctr1-1]=="5" || str_split[ctr1-1]=="6" || str_split[ctr1-1]=="7" || str_split[ctr1-1]=="8" || str_split[ctr1-1]=="9")))
+    {
+      tmp_arr[ctr3]=paste(tmp_str[1:(ctr2-1)],collapse="")
+      if(ctr3>1)
+      {
+        for(temp in 1:(ctr3-1))
+        {
+          if(tmp_arr[ctr3]==tmp_arr[temp])
+          {
+            tmp_arr=tmp_arr[-ctr3]
+            flag=1
+            break
+          }
+        }
+      }
+      if(flag!=1) ctr3=ctr3+1                                                              
+      ctr2=1
+    }
+    #removing operators
+    else if(str_split[ctr1]==")" && str_split[ctr1-1]==")")       
+      next
+    else if(str_split[ctr1]=="\n")
+      next
+    else if(str_split[ctr1]!="/" && str_split[ctr1]!="*" && str_split[ctr1]!="+" && str_split[ctr1]!="-"  && str_split[ctr1]!="^")
+    {
+      tmp_str[ctr2]=paste(str_split[ctr1])
+      ctr2=ctr2+1
+    }
+  }
+  #removing numbers
+  for(ctr5 in 1:length(tmp_arr))                                    
+  {
+    temp1=as.numeric(tmp_arr[ctr5])
+    if(temp1==0 && is.na(temp1)==FALSE)
+    {
+      temp1=1
+    }
+    temp2=temp1/temp1
+    if(!(paste(temp2)=="1"))
+    {
+      final_trans[ctr6]=tmp_arr[ctr5]
+      ctr6=ctr6+1  
+    }
+  }
+  return(final_trans)
+}
+
+#===============================================================================#
+#Function Name: evaluate_exp
+#Signature: evaluate_exp=function(input_expn,data)
+#Description: evaluates the given eexpressions 
+#Return type: transformed data 
+#===============================================================================#
+
+evaluate_exp=function(input_expn,data)
+{
+  transformed_value=eval(parse(text=input_expn),envir=data)                         
+  return(transformed_value)
+}
+
+
+variables=try(splitInputExpression(equation),silent=TRUE)
+inputData<-read.csv(input_path)
+ncol(inputData)
+nrow(inputData)
+mydata=try(inputData[variables],silent=TRUE)
+transformedVariable=try(evaluate_exp(equation,mydata),silent=TRUE)
+if(class(variables)=="try-error"||class(mydata)=="try-error"||class(transformedVariable)=="try-error"))
+{
+  write.table("Error in Process ",paste(output_path,"error.txt",sep="\\"),quote=FALSE)
+}
+else
+{
+  inputData$newvar<-transformedVariable
+  index<-which(names(inputData)=="newvar")
+  colnames(inputData)[index]<-new_varname
+  status<-write.csv(inputData,input_path,row.names=FALSE)
+  write.csv(inputData[index],paste(output_path,"arithmeticExpression_subsetViewpane.csv", sep="\\"),quot=FALSE,row.names=FALSE)
+  write.table("Completed",paste(output_path,"completed.txt",sep="\\"),sep="\t",quote=FALSE,row.names=FALSE,colnames=FALSE)
+  
+}
+

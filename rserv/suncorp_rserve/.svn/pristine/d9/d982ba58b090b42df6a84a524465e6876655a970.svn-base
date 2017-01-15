@@ -1,0 +1,10 @@
+input_path=getwd()
+output_path=getwd()
+dataset_name="test"
+unique_vars ="var"
+unique_level_flag ="true"
+unique_level_vars ="state"
+var_list =c("v1","v2","v3","v4","v5")
+prefix ="abc"
+new_var_name ="newvar"
+new_dataset ="trans"

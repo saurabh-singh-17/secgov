@@ -1,0 +1,114 @@
+#---------------------------------------------------------------------------------------#
+#--                                                                                   --#
+#--  Project Name:   Text Mining                                                      --#
+#--  Task :          Task 1: Text Categorization                        			        --#
+#--  Sub-Task:       1.1 Apply model on new data                                      --#
+#--  version :       1.0 date: 12/04/2012 author: Gaurav Jain		          		        --#
+#---------------------------------------------------------------------------------------#
+
+
+
+# Defining some custom functions
+# 1. To install required packages
+#---------------------------------------------------------------------------------------
+
+is.installed <- function(pkg){ is.element(pkg, installed.packages()[,1])}
+
+
+mlPredict <- function(filePath, fileName, varName, uniqueLabels,
+                      modelLoc, matrixLoc, reportLoc, predReport,
+                      minWordLen = 3, minDocumentFreq = 1, ifTf = FALSE, ifTfIdf = FALSE,
+                      removePunctuations = FALSE, removeNumber = FALSE,
+                      stripWhitespaces = FALSE, stemDoc = FALSE, isLower = FALSE,
+                      remStopwords = FALSE, ifGenerateReport = FALSE){
+
+
+  if(!is.installed('RTextTools')){
+    install.packages('RTextTools',repo="http://lib.stat.cmu.edu/R/CRAN")
+    library('RTextTools')
+  }
+
+  require('RTextTools')
+
+  # To read data from a single csv file and create a dataset of required column
+  #----------------------------------------------------------------------------
+
+  fileLoc <- paste(filePath,fileName,sep="\\")
+
+  tmDataSet <- read_data(fileLoc,type="csv")
+
+  varIndex <- which(colnames(tmDataSet)==varName)
+  corpus <- tolower(tmDataSet[,varIndex])
+
+
+  # To load saved model
+  #----------------------------------------------------------------------------
+
+  load(matrixLoc)
+  load(modelLoc)
+
+  # To create a matrix from the dataset
+  #----------------------------------------------------------------------------
+
+  if(ifTf) {
+  	weighting = weightTf
+  } else if(ifTfIdf) {
+  	weighting = weightTfIdf
+  }
+
+  matrix_new <- create_matrix(corpus,language="english",
+                              minWordLength = minWordLen,minDocFreq = minDocumentFreq,ngramLength = 0,
+                              removeNumbers = removeNumber,stemWords = stemDoc,
+                              removePunctuation = removePunctuations,stripWhitespace = stripWhitespaces,
+                              toLower = isLower,removeStopwords = remStopwords,
+                              weighting,removeSparseTerms = .998,originalMatrix = matrix)
+
+
+  # To create a label list and corpus of independent and dependent data
+  #----------------------------------------------------------------------------
+
+  data_size <- nrow(tmDataSet)
+  label_list <- unlist(strsplit(uniqueLabels, ",", fixed=TRUE))
+  label <- sample(as.numeric(label_list),data_size,replace=TRUE)
+
+  corpus_new <- create_corpus(matrix_new,label,testSize=1:data_size,virgin=TRUE)
+
+
+  # To classify new data and create analytics report
+  #----------------------------------------------------------------------------
+
+  results_new <- classify_models(corpus_new, models)
+  analytics_new <- create_analytics(corpus_new, results_new)
+
+
+  # To generate onscreen results
+  #----------------------------------------------------------------------------
+
+  predicted_Category <- analytics_new@document_summary$CONSENSUS_CODE
+  predTable = table(predicted_Category)
+  predTable = (predTable/sum(predTable))*100
+
+
+  write.csv(predTable, file = predReport, append = FALSE, col.names = TRUE,
+            row.names = FALSE)
+
+
+  # To save analytics reports
+  #----------------------------------------------------------------------------
+
+  if(ifGenerateReport) {
+    write.csv(analytics_new@label_summary, paste(reportLoc,"LabelSummary.csv",sep="\\"))
+
+    write.csv(cbind(corpus, analytics_new@document_summary),
+              paste(reportLoc,"DocumentSummary.csv",sep="\\"))
+  }
+
+
+  # To clear all variable used
+  #----------------------------------------------------------------------------
+
+  rm(list=c("filePath","fileName","fileLoc", "varName","varIndex","tmDataSet","corpus",
+            "matrixLoc","modelLoc","matrix_new","corpus_new","label_list","data_size","label",
+            "predicted_Category","predTable","results_new","analytics_new","models","matrix"))
+
+}

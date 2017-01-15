@@ -1,0 +1,100 @@
+#-------------------------------------------------------------------------------#
+#-- Description : Evaluates the equation we get from the parameter file and   --#
+#--               adds a column to the dataset                                --#
+#-- Author      : Vasanth M M 4261                                            --#
+#-- Created on  : 14Jan2013 2028                                              --#
+#-------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------
+# Parameters Required
+#------------------------------------------------------------------------------
+# input_path <- 'C:/MRx/r/newwe-20-Feb-2013-14-41-07/3'
+# output_path <- 'C:/MRx/r/newwe-20-Feb-2013-14-41-07/3/NewVariable/ArithmeticEqnBuilder/1'
+# equation <- '(ACV)+(ACV)'
+# new_varname <- 's'
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Reading the dataset
+#------------------------------------------------------------------------------
+#dataworking <- read.csv(paste(input_path,'dataworking.csv',sep="/"))
+load(paste(input_path,'dataworking.RData',sep="/"))
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Function to make NA and Inf values blank
+#------------------------------------------------------------------------------
+makeItBlank <- function(theValues,flag.na,flag.inf){
+  na <- NULL
+  inf <- NULL
+  if(flag.na){
+    na <- which(is.na(theValues))
+  }
+  if(flag.inf){
+    inf <- which(theValues='Inf')
+  }
+  naInf<-c(na,inf)
+  theValues[naInf] <- ''
+  return(theValues)
+}
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Evaluating the equation
+#------------------------------------------------------------------------------
+equation<-gsub(pattern="\n",replacement="",equation,fixed=T)
+equation<-gsub(pattern="(",replacement="(as.numeric(",equation,fixed=T)
+equation<-gsub(pattern=")",replacement="))",equation,fixed=T)
+evalEqn <- try(eval(parse(text=equation),envir=dataworking),silent=T)
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# If there is some error, write error.txt, 
+# else add the newly created values to the dataset,
+# write ARITHMETIC_EXPRESSION_COMPLETED.txt and
+# write arithmeticExpression_subsetViewpane.csv with the newly created values
+#------------------------------------------------------------------------------
+if(class(evalEqn)=="try-error"){
+  write("Error in evaluating the expression",paste(output_path,"/error.txt",sep=""))
+}else{
+  if(!all(is.na(evalEqn))){
+    evalEqn <- makeItBlank(evalEqn,flag.na=T,flag.inf=F)
+    dataworking$lastCol <- as.numeric(evalEqn)
+    colnames(dataworking)[ncol(dataworking)] <- new_varname
+    write.csv(dataworking,paste(input_path,"dataworking.csv",sep="/"),row.names=F,quote=F)
+    save(dataworking, file = paste(input_path,"dataworking.RData",sep="/"))
+    
+    #-------------------------------------------------------------------------------
+    # update the dataset properties
+    #-------------------------------------------------------------------------------
+    source(paste(genericCode_path,"datasetprop_update.R",sep="/"))
+    #-------------------------------------------------------------------------------
+    
+    #-------------------------------------------------------------------------------
+    # 6000 check
+    #-------------------------------------------------------------------------------
+    df_newvar                      <- dataworking[ncol(dataworking)]
+    if (nrow(df_newvar) > 6000) {
+      x_temp                       <- sample(x=nrow(df_newvar),
+                                             size=6000,
+                                             replace=FALSE)
+      df_newvar                    <- df_newvar[x_temp, , drop=FALSE]
+    }
+    #-------------------------------------------------------------------------------
+    
+    write.csv(df_newvar,paste(output_path,"arithmeticExpression_subsetViewpane.csv", sep="/"),quote=F,row.names=F)
+    write("VARIABLE_CREATION_COMPLETE",paste(output_path,"/ARITHMETIC_EXPRESSION_COMPLETED.txt",sep=""))
+    #loadcmp(paste(genericCode_path,"datasetprop_update.Rc",sep="/"))
+  }
+}
+#------------------------------------------------------------------------------

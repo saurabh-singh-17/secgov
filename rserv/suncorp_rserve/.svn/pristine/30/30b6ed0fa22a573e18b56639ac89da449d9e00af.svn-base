@@ -1,0 +1,275 @@
+#===========================Project Header=============================
+#Process Name: Creates Flag columns according to type and value selected
+#Description: Seasonality Indicator
+#Return type: 
+#Created Date : 20-9-2012
+#Author : Jeevitha
+#=======================================================================
+library(XML)
+
+# writing a function to recognise  a date format
+dateformat<-function(date){
+  form<-NULL
+  temp<-as.character(date[1])
+  if(any(grepl("[[:alpha:]]",date) == "TRUE"))
+  {
+    return("unknown")
+  }
+  if(grepl(" ",temp)){
+    date<-apply(as.data.frame(date),1,function(x){strsplit(as.character(x)," ")[[1]][1]})
+  }
+  date<-as.character(date)
+  if (is.null(date))
+    return("unknown")  
+  if(is.na(mean(as.numeric(date),na.rm=T)) == "FALSE")
+  {
+    return("unknown")
+  }
+  if((length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == FALSE)))   &
+       (length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == FALSE))))
+    return("unknown")
+  if (all(is.na(date))) 
+    return(NA)
+  val<-length(date)
+  if(val > 100){val= 100}
+  date[which(date=='')] <- NA
+  if(!is.na(as.numeric(substr(date[1],1,4)))){
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],5,5)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[3,]))),na.rm=T)
+    if(max1 > 12 & max2 <= 12){form<-paste("%Y",split,"%d",split,"%m",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+  }else{
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],6-(10-nchar(date[1])),6-(10-nchar(date[1])))
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+  }
+  if(max(nchar(date)) <= 8)
+  {
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],nchar(date[1])-2,nchar(date[1])-2)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+  }
+  if(nchar(temp[1]) > 10 & nchar(temp[1]) <= 16){form<- paste(form," %H:%M",sep="")}
+  if(nchar(temp[1]) > 16){form<- paste(form," %H:%M:%S",sep="")}
+  return(form)
+}
+#SEASONALITY INDICATOR FOR WEEKDAY
+seasonality_weekday<-function(tempdate)
+{
+  daysofweek<-c("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday")
+  #creating output
+  result<-inputdata[date_var]
+  # week day value
+  result["value_weekday"]<-as.data.frame(match(weekdays(tempdate),daysofweek))
+  var_days<-tolower(substring(daysofweek,1,3))
+  if(indicator_type=="base")
+  {
+    for(i in 1:7)
+    {
+      if(i!=base_value)
+      {
+        #framing the name for the new variable
+        colName=paste(prefix,var_days[i],substr(date_var, 1, 10),sep="_")
+        result[colName]<-rep(0,nrow(result))
+        result[,colName][result["value_weekday"]==i]<-1  	
+      }
+    }
+  }
+  else
+  {
+    #specific values convertinbg string to integer
+    specific_values<-as.integer(unlist(strsplit(specific_values,split=" ",fixed=TRUE)))
+    for(i in 1:length(specific_values))
+    {
+      #framing column names 
+      colName=paste(prefix,var_days[as.integer(specific_values[i])],substr(date_var, 1, 10),sep="_")
+      result[colName]<-rep(0,nrow(result))
+      result[,colName][result["value_weekday"]==specific_values[i]]<-1
+    }
+  }
+  return(result)
+  
+}
+#WEEK FUNCTION FOR  WEEK
+seasonality_week<-function(tempdate)
+{
+  result<-inputdata[date_var]
+  #getting the day number   
+  weekformatteddate<-as.integer(format(tempdate,"%d"))
+  result["value_day"]<-rep(0,nrow(result))
+  result$value_day[intersect(which(weekformatteddate>=1),which(weekformatteddate<=7))]<-1
+  result$value_day[intersect(which(weekformatteddate>=8),which(weekformatteddate<=14))]<-2
+  result$value_day[intersect(which(weekformatteddate>=15),which(weekformatteddate<=21))]<-3
+  result$value_day[intersect(which(weekformatteddate>=22),which(weekformatteddate<=28))]<-4
+  result$value_day[intersect(which(weekformatteddate>=29),which(weekformatteddate<=31))]<-5
+  if(indicator_type=="base")
+  {
+    for(i in 1:5)
+    {
+      if(i!=base_value)
+      {
+        colName=paste(prefix,paste("week",i,sep=""),substr(date_var, 1, 10),sep="_")
+        result[colName]<-0
+        result[,colName][result["value_day"]==i]<-1
+      }
+    }
+  }
+  else
+  {
+    specific_values<-as.integer(unlist(strsplit(specific_values,split=" ",fixed=TRUE)))
+    for(i in 1:length(specific_values))
+    {
+      colName=paste(prefix,paste("week",specific_values[i],sep=""),substr(date_var, 1, 10),sep="_")
+      result[colName]<-0
+      result[,colName][result["value_day"]==specific_values[i]]<-1
+    }
+  }
+  return(result)
+}
+#SEASONALOTITY FOR MONTH
+seasonality_month<-function()
+{
+  result<-inputdata[date_var]
+  var_month<-c("January","February","March","April","May","June","July","August","September","October","November","December")
+  result["value_month"]<-match(months(tempdate),var_month)
+  # for creation of variables  
+  var_mon_name<-tolower(substring(var_month,1,3))
+  if(indicator_type=="base")
+  {
+    for(i in 1:length(var_month))
+    {
+      if(i!=base_value)
+      {
+        
+        colName=paste(prefix,var_mon_name[i],substr(date_var, 1, 10),sep="_")
+        result[colName]<-0
+        result[,colName][result["value_month"]==i]<-1
+      }
+    }
+  }
+  else
+  {
+    specific_values<-as.integer(unlist(strsplit(specific_values,split=" ",fixed=TRUE)))
+    for(i in 1:length(specific_values))
+    {
+      colName=paste(prefix,var_mon_name[as.integer(specific_values[i])],substr(date_var, 1, 10),sep="_")
+      result[colName]<-0
+      result[,colName][result["value_month"]==specific_values[i]]<-1
+    }
+  }
+  return(result)
+}
+#SEASONALITY FOR QUARTER
+seasonality_quarter<-function()
+{
+  #temp variables for quarters
+  result<-inputdata[date_var]
+  var_quarter<-c("Q1","Q2","Q3","Q4")
+  result["value_quarter"]<-match(quarters(tempdate),var_quarter)
+  if(indicator_type=="base")
+  {
+    for(i in 1:4)
+    {
+      if(i!=base_value)
+      {
+        colName=paste(prefix,paste(indicator,i,sep=""),substr(date_var, 1, 10),sep="_")
+        result[colName]<-0
+        result[,colName][result["value_quarter"]==i]<-1
+      }
+    }
+  }
+  else
+  {
+    specific_values<-as.integer(unlist(strsplit(specific_values,split=" ",fixed=TRUE)))
+    for(i in 1:length(specific_values))
+    {
+      colName=paste(prefix,paste(indicator,specific_values[i],sep=""),substr(date_var, 1, 10),sep="_")
+      result[colName]<-0
+      result[,colName][result["value_quarter"]==specific_values[i]]<-1
+    }
+  }
+  return(result)
+}
+#generating the xml file
+
+generatingXML<-function()
+{
+  #deleteing the first tow columns
+  tempresult<-result[-c(1,2)]
+  prefixnames<-names(tempresult)
+  #rootnode
+  xmlfile<-newXMLNode("TABLE")
+  for(i in 1:ncol(tempresult))
+  {
+    xmlnode<-newXMLNode("NEW_VARNAME",parent=xmlfile)
+    newXMLNode("new_varname",prefixnames[i],parent=xmlnode)
+  }
+  saveXML(xmlfile,paste(output_path,"timeIndicatorVariable_new_varname.xml",sep="/"))
+  #appending to csv
+  dataworking <- cbind(inputdata,tempresult)
+  write.csv(dataworking,paste(input_path,"dataworking.csv",sep="/"),row.names=F,quote=F)
+  save(dataworking, file = paste(input_path,"dataworking.RData",sep="/"))
+}
+#reading data from csv
+#inputdata<-read.csv(paste(input_path,"dataworking.csv",sep="\\"))
+load(paste(input_path,"dataworking.RData",sep="/"))
+inputdata <- dataworking
+rm(dataworking)
+#getting the date columns
+form<-dateformat(inputdata[,date_var])
+tempdate<-as.Date(inputdata[,date_var],format=form)
+#appending in result the date column
+prefix<-substring(prefix,1,nchar(prefix)-1)
+if(indicator=="weekday")
+{
+  result<-seasonality_weekday(tempdate)
+}
+if(indicator=="day")
+{
+  result<-seasonality_week(tempdate)
+}
+if(indicator=="month")
+{
+  result<-seasonality_month()
+}
+if(indicator=="qtr")
+{
+  indicator <- "quarter"
+  result<-seasonality_quarter()
+}
+generatingXML()
+
+#-------------------------------------------------------------------------------
+# 6000 check
+#-------------------------------------------------------------------------------
+if (nrow(result) > 6000) {
+  x_temp                       <- sample(x=nrow(result),
+                                         size=6000,
+                                         replace=FALSE)
+  result                       <- result[x_temp, , drop=FALSE]
+}
+#-------------------------------------------------------------------------------
+write.csv(result,paste(output_path,"timeIndicatorVariable_subsetViewpane.csv",sep="/"),row.names=F,quote=F)
+
+#-------------------------------------------------------------------------------
+# update the dataset properties
+#-------------------------------------------------------------------------------
+source(paste(genericCode_path,"datasetprop_update.R",sep="/"))
+#-------------------------------------------------------------------------------
+
+write.table("TIME_INDICATOR_VARIABLE_COMPLETED",paste(output_path,"TIME_INDICATOR_VARIABLE_COMPLETED.txt",sep="/"),row.names=F,quote=F,col.names=F)
+

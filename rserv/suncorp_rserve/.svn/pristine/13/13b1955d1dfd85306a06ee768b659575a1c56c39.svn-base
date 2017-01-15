@@ -1,0 +1,289 @@
+#-------------------------------------------------------------------------------
+# parameters needed
+#-------------------------------------------------------------------------------
+# /../<dataset>/param_datasetView.R
+# c_path_in                      : path of input dataset(dataworking.RData)
+# c_path_out                     : path of the output from this code
+# c_path_filter_param            : path of the param for filtering
+# c_path_filter_code             : path of the code for filtering
+# c_sort_order                   : sort order of the variables
+# c_type                         : type of dataset view
+# c_var_sort_by                  : variables to sort by
+# c_var_view                     : variables to view
+# n_count                        : no of rows to view
+# n_random                       : no of rows to randomly view
+# n_start                        : start no of rows to view
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# sample parameters
+#-------------------------------------------------------------------------------
+# c_path_in                      <- /../<dataset>/
+# c_path_out                     <- /../<dataset>/
+# c_path_filter_param            <- /../<dataset>/project_setup/sort_and_filter/<scenario>/param_filter.R
+# c_path_filter_code             <- /../project_setup/sort_and_filter.R
+# c_sort_order                   <- ascending|descending
+# c_type                         <- all|random
+# c_var_sort_by                  <- <string>
+# c_var_view                     <- <string>
+# n_count                        <- <+ve integer>
+# n_random                       <- <+ve integer>
+# n_start                        <- <+ve integer>
+
+
+# c_path_in                        <- c("D:/data")
+# c_path_out                       <- c("D:/temp")
+# c_path_filter_param              <- c("")
+# c_path_filter_code               <- c("D:/code/sort_and_filter.R")
+# c_sort_order                     <- c("ascending", "descending")
+# c_type                           <- c("all")
+# c_var_sort_by                    <- c("geography", "sales")
+# c_var_view                       <- c("sales", "geography")
+# n_count                          <- 100
+# n_random                         <- 0
+# n_start                          <- 1
+
+c_path_in                        <- input_path
+c_path_out                       <- output_path
+c_type                           <- type
+c_var_view                       <- varlist
+n_count                          <- as.integer(count)
+n_random                         <- as.integer(random)
+n_start                          <- as.integer(start)
+c_var_sort_by                    <- NULL
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# Making the "" parameters NULL
+#-------------------------------------------------------------------------------
+a.all <- ls()
+
+for (c.tempi in a.all) {
+  
+  if (!length(grep(pattern="^(c|n|b|l|x)_", x=c.tempi))) next
+  
+  x_tempi <- eval(parse(text=c.tempi))
+  
+  if (class(x_tempi) != "character") next  
+  if (length(x_tempi) != 1) next
+  if (is.null(x_tempi)) next
+  if (x_tempi != "") next
+  
+  assign(x=c.tempi, value=NULL)
+  print(c.tempi)
+  
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# preparing
+#-------------------------------------------------------------------------------
+unlink(x=paste(c_path_out, "/datasetView.csv", sep=""))
+unlink(x=paste(c_path_out, "/DATASET_VIEW_COMPLETED.TXT", sep=""))
+c_var_key                        <- "primary_key_1644"
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# loading the dataset
+#-------------------------------------------------------------------------------
+load(file=paste(c_path_in, "/dataworking.RData", sep=""))
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+#applying duplicate scenario
+#------------------------------------------------------------------------------- 
+if (duplicationFlag == "true"){
+  index <- which(dataworking[,paste("murx_",scenarioName,sep="")] == 1)
+  dataworking <- dataworking[index,]
+}
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# check if the previous conditions were the same
+#-------------------------------------------------------------------------------
+l_sameasb4                       <- FALSE
+# if (file.exists(paste(c_path_in, "/dataset_view_previous.RData", sep=""))) {
+#   load(file=paste(c_path_in, "/dataset_view_previous.RData", sep=""))
+#   l_sameasb4                     <- TRUE
+#   x_temp                         <- identical(x=c_var_sort_by,
+#                                               y=previous_c_var_sort_by)
+#   l_sameasb4                     <- l_sameasb4 & x_temp
+#   x_temp                         <- identical(x=c_sort_order,
+#                                               y=previous_c_sort_order)
+#   l_sameasb4                     <- l_sameasb4 & x_temp
+#   
+#   if (length(c_path_filter_param) & l_sameasb4) {
+#     x_temp                       <- identical(x=c_var_view,
+#                                               y=previous_c_var_view)
+#     l_sameasb4                   <- l_sameasb4 & x_temp
+#     x_temp                       <- identical(x=c_text_filter_dc,
+#                                               y=previous_c_text_filter_dc)
+#     l_sameasb4                   <- l_sameasb4 & x_temp
+#     x_temp                       <- identical(x=c_text_filter_vs,
+#                                               y=previous_c_text_filter_vs)
+#     l_sameasb4                   <- l_sameasb4 & x_temp
+#     x_temp                       <- identical(x=c_text_sort,
+#                                               y=previous_c_text_sort)
+#     l_sameasb4                   <- l_sameasb4 & x_temp
+#   }
+# }
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# get the key variable
+#-------------------------------------------------------------------------------
+if (l_sameasb4) {
+  n_key                          <- previous_n_key
+} else {
+  if (length(c_path_filter_param) == 0 & length(c_var_sort_by) == 0) {
+    n_index                      <- order(dataworking[, c_var_key])
+  }
+  if (length(c_path_filter_param)) {
+    source(file=c_path_filter_param)
+    source(file=c_path_filter_code)
+    
+    if (length(c_text_filter_dc)) {
+      if (c_text_filter_dc == "") c_text_filter_dc <- NULL
+    }
+    if (length(c_text_filter_vs)) {
+      if (c_text_filter_vs == "") c_text_filter_vs <- NULL
+    }
+    if (length(c_text_sort)) {
+      if (c_text_sort == "") c_text_sort <- NULL
+    }
+    if (length(c_var_date_sort_filter)) {
+      if (c_var_date_sort_filter == "") c_var_date_sort_filter <- NULL
+    }
+    
+    c_var_required               <- c_var_view
+    dataworking                  <- muRx_filter_sort(df_x=dataworking,
+                                                     c_text_filter_dc,
+                                                     c_text_filter_vs,
+                                                     c_text_sort,
+                                                     c_var_date_sort_filter,
+                                                     c_var_required)
+    n_index                      <- 1:nrow(dataworking)
+  }
+  if (length(c_var_sort_by)) {
+    c_text                       <- "order("
+    for (tempi in 1:length(c_var_sort_by)) {
+      c_var_sort_by_now          <- c_var_sort_by[tempi]
+      c_sort_order_now           <- c_sort_order[tempi]
+      l_decreasing               <- c_sort_order_now == "decreasing"
+      class_var_sort_by_now      <- class(dataworking[, c_var_sort_by_now])
+      
+      if (class_var_sort_by_now == "integer" | class_var_sort_by_now == "numeric") {
+        x_temp                   <- paste("dataworking[, '",
+                                          c_var_sort_by_now,
+                                          "']",
+                                          sep="")
+        if (l_decreasing) {
+          x_temp                 <- paste("-",
+                                          x_temp,
+                                          sep="")
+        }
+      } else if (class_var_sort_by_now == "character" | class_var_sort_by_now == "factor") {
+        dataworking[, c_var_sort_by_now] <- as.character(dataworking[, c_var_sort_by_now])
+        x_temp                   <- unique(dataworking[, c_var_sort_by_now])
+        levels                   <- sort(x=x_temp,
+                                         decreasing=l_decreasing)
+        
+        dataworking[, c_var_sort_by_now] <- factor(x=dataworking[, c_var_sort_by_now],
+                                                   levels=levels)
+        x_temp                   <- paste("dataworking[, '",
+                                          c_var_sort_by_now,
+                                          "']",
+                                          sep="")
+      }
+      c_text                     <- paste(c_text,
+                                          x_temp,
+                                          ",",
+                                          sep="")
+    }
+    c_text                       <- paste(c_text,
+                                          "decreasing=FALSE)")
+    n_index                      <- eval(parse(text=c_text))
+  }
+  
+  n_key                          <- dataworking[n_index, c_var_key]
+}
+#-------------------------------------------------------------------------------
+ 
+#-------------------------------------------------------------------------------
+# take the necessary observations for dataset view
+#-------------------------------------------------------------------------------
+n_obs                            <- nrow(dataworking)
+n_random                         <- min(n_random, n_obs)
+n_start                          <- min(n_start, n_obs)
+n_stop                           <- n_start + n_count-1
+n_stop                           <- min(n_stop, n_obs)
+
+if (c_type == "random") {
+  x_temp                         <- sample(x=n_obs, size=n_random)
+} else if (c_type == "all") {
+  x_temp                         <- n_start:n_stop
+}
+n_index_row                      <- match(x=n_key[x_temp],
+                                          table=dataworking[, c_var_key])
+dataworking                      <- dataworking[n_index_row, c_var_view, drop=FALSE]
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# saving the present parameters to compare next time
+#-------------------------------------------------------------------------------
+# n_key                            -> previous_n_key
+# c_var_sort_by                    -> previous_c_var_sort_by
+# c_sort_order                     -> previous_c_sort_order
+# c_var_view                       -> previous_c_var_view
+# list                             <- c("previous_c_var_sort_by",
+#                                       "previous_c_sort_order",
+#                                       "previous_c_var_view",
+#                                       "previous_n_key")
+# if (length(c_path_filter_param)) {
+#   c_text_filter_dc               -> previous_c_text_filter_dc
+#   c_text_filter_vs               -> previous_c_text_filter_vs
+#   c_text_sort                    -> previous_c_text_sort
+#   list                           <- c(list,
+#                                       "previous_c_text_filter_dc",
+#                                       "previous_c_text_filter_vs",
+#                                       "previous_c_text_sort")
+# }
+# save(list=list, file=paste(c_path_in, "/dataset_view_previous.RData", sep=""))
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# output : datasetView.csv
+#-------------------------------------------------------------------------------
+write.csv(dataworking,
+          paste(c_path_out, "/datasetView.csv", sep=""),
+          quote=FALSE,
+          row.names=FALSE)
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+#noobs_refresh.txt
+#-------------------------------------------------------------------------------
+write(n_obs, file=paste(c_path_out, "/noobs_refresh.txt", sep=""))
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+
+# completed txt
+#-------------------------------------------------------------------------------
+write("dataset view completed",
+      file=paste(c_path_out, "/DATASET_VIEW_COMPLETED.TXT", sep=""))
+#-------------------------------------------------------------------------------

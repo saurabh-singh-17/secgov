@@ -1,0 +1,97 @@
+#------------------------------------------------------------------------------
+# Parameters Required
+#------------------------------------------------------------------------------
+# input_path     <- 'D:/data'
+# dataset_name   <- 'mydata'
+# file_extension        <- 'RData'
+# output_path    <- 'C:/Users/an_awesome_user/MRx/r/project1-1-Aug-2013-15-45-19'
+# dataset_folder <- 'C:/Users/an_awesome_user/MRx/r/project1-1-Aug-2013-15-45-19/1'
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Creating a variable called input_data with the path of the input file
+#------------------------------------------------------------------------------
+input_data <- paste(input_path,"/",dataset_name,".",file_extension,sep="")
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Read the data depending on the file extension
+#------------------------------------------------------------------------------
+switch(tolower(file_extension),
+        tsv = {
+          dataworking <- read.table(file=input_data,header=T,sep="\t",check.names=T,fill=T)
+        },
+        csv = {
+          dataworking <- read.csv(file=input_data,header=T)
+        },
+        rdata = {
+          currentname <- load(input_data)
+          load(input_data)
+          eval(parse(text=paste("dataworking <- ",currentname)))
+          if(currentname!="dataworking") eval(parse(text=paste("rm(",currentname,")",sep="")))
+        })
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Keep only alphanumeric characters and _ in the column names
+#------------------------------------------------------------------------------
+colnames(dataworking) <- gsub(pattern="[^[:alnum:]_]",replacement="_",x=colnames(dataworking),ignore.case=T)
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# If there is a column named primary_key_1644 in the dataset, renaming it
+#------------------------------------------------------------------------------
+# if(any(colnames(dataworking)=="primary_key_1644")){
+#   colnames(dataworking)[which(colnames(dataworking)=="primary_key_1644")] <- "primary_key_1644_original"
+# }
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Adding row numbers as a column with the name primary_key_1644
+#------------------------------------------------------------------------------
+dataworking$primary_key_1644 <- 1:nrow(dataworking)
+#------------------------------------------------------------------------------
+
+#unixCommand = paste("chmod 777* ",dataset_folder,"/",sep="")
+#system(unixCommand,intern=TRUE)
+
+#------------------------------------------------------------------------------
+# Writing the dataset as dataworking.csv
+#------------------------------------------------------------------------------
+write.csv(dataworking,paste(dataset_folder,"/dataworking.csv",sep=""),row.names=F,quote=F)
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Saving the dataset as dataworking.RData
+#------------------------------------------------------------------------------
+save(dataworking,file=paste(dataset_folder,"/dataworking.RData",sep=""))
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Creating a dataset with dataset properties
+#------------------------------------------------------------------------------
+dataset_properties=cbind.data.frame(file_name=dataset_name,no_of_obs=nrow(dataworking),no_of_vars=ncol(dataworking),file_size=round(file.info(input_data)$size/1048576,2))
+write.csv(dataset_properties,file=paste(output_path,"/dataset_properties.csv",sep=""),quote=F,row.names=F)
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# The completed.txt file
+#------------------------------------------------------------------------------
+write("DATASET_PROPERTIES_COMPLETED", file = paste(output_path,"/DATASET_PROPERTIES_COMPLETED.txt",sep=""))
+#------------------------------------------------------------------------------

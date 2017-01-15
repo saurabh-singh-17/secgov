@@ -1,0 +1,151 @@
+if(exists('isDQA')){
+  #----------------------------------------------------------------------------------------------------
+  # Code for DQA > Unique Values for Variables
+  #----------------------------------------------------------------------------------------------------
+  # dataworking <- subset(x=read.csv(input_path),select=var_list)
+  load(paste(input_path,"/dataworking.RData",sep=""))
+  dataworking <- subset(x=dataworking,select=var_list)
+  output      <- lapply(dataworking,unique)
+  maxLen      <- max(sapply(output,length))
+  for(i in seq_along(output)){
+    
+    if(class(output[[i]]) == "factor")
+    {
+      output[[i]] <- as.character(output[[i]])
+    }
+    
+    if(class(output[[i]]) != "character")
+    {
+      if (!all(is.na(output[[i]]))) {
+        output[[i]] <- as.character(output[[i]])[order(x=as.numeric(as.character(output[[i]])),na.last=TRUE)]  
+      }
+    }
+    
+    output[[i]][which(as.character(output[[i]])=='')] <- 'MISSING'
+    output[[i]] <- c(output[[i]],rep("", maxLen - length(output[[i]])))
+  }
+  output <- data.frame(output, stringsAsFactors = FALSE)
+  write.csv(output, paste(output_path,file = "uniqueValues.csv",sep="/"), quote=FALSE, row.names=FALSE)
+  write("UNIQUE_VALUES_COMPLETED", file = paste(output_path, "UNIQUE_VALUES_COMPLETED.txt", sep="/"))
+} else {
+  # writing a function to recognise  a date format
+  dateformat<-function(date){
+    index<-(which(date==""))
+    if (length(index)!=0){
+      date<-date[-index]
+    }
+    form<-"unknown"
+    temp<-as.character(date[1])
+    if(any(grepl("[[:alpha:]]",date) == "TRUE"))
+    {
+      return("unknown")
+    }
+    if(grepl(" ",temp)){
+      date<-apply(as.data.frame(date),1,function(x){strsplit(as.character(x)," ")[[1]][1]})
+    }
+    date<-as.character(date)
+    if (is.null(date))
+      return("unknown")  
+    if(is.na(mean(as.numeric(date),na.rm=T)) == "FALSE")
+    {
+      return("unknown")
+    }
+    if((length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == FALSE)))   &
+         (length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == FALSE))))
+      return("unknown")
+    if (all(is.na(date))) 
+      return(NA)
+    val<-length(date)
+    if(val > 100){val= 100}
+    date[which(date=='')] <- NA
+    if(!is.na(as.numeric(substr(date[1],1,4)))){
+      decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+      split<-substr(date[1],5,5)
+      decide<-as.data.frame(decide)
+      max1<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+      max2<-max(as.numeric(as.character(as.matrix(decide[3,]))),na.rm=T)
+      if(max1 > 12 & max2 <= 12){form<-paste("%Y",split,"%d",split,"%m",sep="")}
+      if(max1 <= 12 & max2 >= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+      if(max1 <= 12 & max2 <= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+    }else{
+      decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+      split<-substr(date[1],6-(10-nchar(date[1])),6-(10-nchar(date[1])))
+      decide<-as.data.frame(decide)
+      max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+      max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+      if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%Y",sep="")}
+      if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+      if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+    }
+    if((max(nchar(date)) <= 10 && split != "/" && split != "-"))
+      
+    {
+      decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+      split<-substr(date[1],nchar(date[1])-2,nchar(date[1])-2)
+      decide<-as.data.frame(decide)
+      max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+      max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+      if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%y",sep="")}
+      if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+      if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+    }
+    if(nchar(temp[1]) > 10 & nchar(temp[1]) <= 16){form<- paste(form," %H:%M",sep="")}
+    if(nchar(temp[1]) > 16){form<- paste(form," %H:%M:%S",sep="")}
+    return(form)
+  }
+  
+  FUN                            <- function(x) {
+    c_format_date                <- "unknown"
+    x                            <- unique(x)
+    if (class(x) == "factor") {
+      x                          <- as.character(x)
+    }
+    if (class(x) == "character") {
+      c_format_date              <- dateformat(x)
+      if (c_format_date != "unknown") {
+        x                        <- as.Date(x=x, format=c_format_date)
+      }
+    }
+    x                            <- sort(na.omit(x))
+    if (c_format_date != "unknown") {
+      x                          <- format(x=x, format=c_format_date)
+    }
+    if (length(x) == 0) {
+      x                          <- ""
+    }
+    return(x)
+  }
+  c_path_in                      <- input_path
+  c_path_out                     <- output_path
+  c_var_in                       <- var_list
+  
+  load(paste(input_path, "/dataworking.RData", sep=""))
+  df_out                         <- lapply(X=dataworking[c_var_in],
+                                           FUN=FUN)
+  x_temp                         <- max(sapply(df_out,
+                                               length))
+  FUN                            <- function(x,
+                                             n_length) {
+    x_temp                       <- n_length - length(x)
+    x_temp                       <- c(x,
+                                      rep(x="",
+                                          x_temp))
+    return(x_temp)
+  }
+  df_out                         <- data.frame(lapply(X=df_out,
+                                                      FUN=FUN,
+                                                      x_temp),
+                                               stringsAsFactors=FALSE)
+  
+  write.csv(df_out,
+            paste(c_path_out,
+                  "/uniqueValues.csv",
+                  sep=""),
+            quote=FALSE,
+            row.names=FALSE)
+  
+  write(x="UNIQUE_VALUES_COMPLETED",
+        file=paste(c_path_out,
+                   "/UNIQUE_VALUES_COMPLETED.txt",
+                   sep=""))
+}

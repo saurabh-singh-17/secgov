@@ -1,0 +1,22 @@
+resultString = "success"
+
+currentTime = paste(Sys.time(),getwd(),": INFO R Code started")
+write(x=currentTime,file=logFile,ncolumns=1,append=T)
+
+res= try(source('/usr/local/repos/rcodes/uniqueValues.R'),silent=TRUE)
+if(class(res)=="try-error")
+{
+  resultString="error"
+  errorMessage = res[[1]]
+  currentTime = paste(Sys.time(),getwd(),": ERROR ",errorMessage)
+  write(x=currentTime,file=logFile,ncolumns=1,append=T)
+  currentTime = paste(Sys.time(),getwd(),": INFO R code ends")
+  write(x=currentTime,file=logFile,ncolumns=1,append=T)
+}else
+{
+currentTime = paste(Sys.time(),getwd(),": INFO R Code completed")
+write(x=currentTime,file=logFile,ncolumns=1,append=T)
+resultString = "success"
+}
+
+

@@ -1,0 +1,490 @@
+#------------------------------------------------------------------------------------------------------#
+# Last EditedBy : #~!@#4493,new,eda,univariate,08feb2013,1618,vasanth                                --#
+#------------------------------------------------------------------------------------------------------#
+
+#------------------------------------------------------------------------------------------------------#
+#--                                                                                                  --#   
+#-- Project Name :  MRx_UnivariateAnalysis_AcrossDataset                                                --#
+#-- Descrption  :  Generates Univariate Summary                                                 --#
+#-- Return type  : Creates summary  of the variables selected                                                                                   --#
+#-- Author       : Jeevitha Gajendran                                                                 --#                 
+#------------------------------------------------------------------------------------------------------#
+library(moments)
+library(modeest)
+library(XML)
+library(tseries)
+
+
+# writing a function to recognise  a date format
+dateformat<-function(date){
+  form<-NULL
+  temp<-as.character(date[1])
+  if(any(grepl("[[:alpha:]]",date) == "TRUE"))
+  {
+    return("unknown")
+  }
+  if(grepl(" ",temp)){
+    date<-apply(as.data.frame(date),1,function(x){strsplit(as.character(x)," ")[[1]][1]})
+  }
+  date<-as.character(date)
+  if (is.null(date))
+    return("unknown")  
+  if(is.na(mean(as.numeric(date),na.rm=T)) == "FALSE")
+  {
+    return("unknown")
+  }
+  if((length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == FALSE)))   &
+       (length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == FALSE))))
+    return("unknown")
+  if (all(is.na(date))) 
+    return(NA)
+  val<-length(date)
+  if(val > 100){val= 100}
+  date[which(date=='')] <- NA
+  if(!is.na(as.numeric(substr(date[1],1,4)))){
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],5,5)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[3,]))),na.rm=T)
+    if(max1 > 12 & max2 <= 12){form<-paste("%Y",split,"%d",split,"%m",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+  }else{
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],6-(10-nchar(date[1])),6-(10-nchar(date[1])))
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+  }
+  if(max(nchar(date)) <= 8)
+  {
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],nchar(date[1])-2,nchar(date[1])-2)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+  }
+  if(nchar(temp[1]) > 10 & nchar(temp[1]) <= 16){form<- paste(form," %H:%M",sep="")}
+  if(nchar(temp[1]) > 16){form<- paste(form," %H:%M:%S",sep="")}
+  return(form)
+}
+univariateSummary<-function(subset.data)
+{
+  univarvector<-NULL      
+  mean<-mean(subset.data,na.rm=T)
+  stddev<-sd(subset.data,na.rm=T)
+  max<-max(subset.data,na.rm=T)
+  min<-min(subset.data,na.rm=T)
+  median<-median(subset.data,na.rm=T)
+  range<-max-min
+  observations_used<-length(subset.data)
+  iqr<-IQR(subset.data,na.rm=T) 
+  number_of_missing<-sum(is.na(subset.data))
+  uc<-quantile(subset.data,0.75,na.rm=T)+(1.5*iqr)
+  lc<-quantile(subset.data,0.25,na.rm=T)-(1.5*iqr)
+  noofoutliers<-length(which(subset.data > uc | subset.data < lc))
+  no_of_zeros=sum(subset.data==0)
+  mode<-(mlv(subset.data, method = "mfv"))$M    
+  result<-data.frame(c(mean,stddev,max,min,median,range,observations_used,iqr,number_of_missing,noofoutliers,no_of_zeros,mode[1]))
+  names(result)="estimate"
+  statistic=c("mean","stddev","max","min","median","range","observations_used","iqr","number_of_missing","no_of_outliers","no_of_zeros","mode")
+  result<-cbind.data.frame(statistic,result)
+  return(result)
+} 
+#Box Value
+boxplotfun<-function(subset.data)
+{
+  box_mean<-mean(subset.data,na.rm=T)
+  p_100<-max(subset.data, na.rm=TRUE)
+  p_75<-quantile(subset.data,0.75)
+  p_50<-median(subset.data,na.rm=T)     
+  p_25<-quantile(subset.data,0.25)
+  p_0<-min(subset.data,na.rm=T)
+  result<-c(box_mean,p_0,p_25,p_50,p_75,p_100)
+  return(result)
+}
+#probability Function
+pplotFunction<-function(subset.data)
+{
+  prob_result<-NULL
+  tempResult<-NULL  
+  mu<-mean(subset.data,na.rm=T)
+  sdev<-sd(subset.data,na.rm=T)
+  for(tempIndex in 1 :100)
+  {
+    if(tempIndex==100)
+    {
+      break
+    }
+    else
+    {
+      pplot<- tempIndex/100
+      pplotvalue <- mu+(sdev*qnorm(pplot))
+      tempResult<-rbind(tempResult,cbind(pplot,pplotvalue))
+    }
+  }
+  return(tempResult)
+}
+#Standadard Error for Acf
+standardError<-function(x,n)
+{
+  len=length(x)
+  stdResult<-NULL
+  if(len<=1)
+  {
+    return(0)
+  }
+  for(iterator in 1:len)
+  {
+    temp=c(1:iterator)
+    tempSqr=sqrt((sum(temp*temp) * 2 + 1)/n)
+    stdResult=c(stdResult,tempSqr)
+  }
+  #result<-c(result,length(result))
+  return(stdResult)
+}
+#Acf Function
+acfFunction = function(subset.data)
+{
+  library(tseries)  
+  val=acf(x=as.numeric(subset.data),lag.max=24,plot=FALSE)
+  Lag=val$lag
+  Correlation=val$acf
+  StdErr=standardError(x=Lag,n=length(subset.data))
+  StdErrX2=2*StdErr
+  Neg_StdErrX2 = -1*StdErrX2
+  result=cbind.data.frame(Lag,Correlation,StdErr,StdErrX2,Neg_StdErrX2)
+  return(result)
+}
+#Seasonality function
+seasonalityFunction<-function(subset.data)
+{
+  adfValues=NULL  
+  for(adflags in 0:2)
+  {
+    tempadf=try(adf.test(subset.data,k=adflags),silent=TRUE)
+    if(class(tempadf)=="try-error")
+    {
+      tempadf=try(adf.test(subset.data,k=0),silent=TRUE)
+    }
+    valLag=as.numeric(tempadf$parameter)
+    rhoVals=as.numeric(tempadf$statistic)
+    pval=as.numeric(tempadf$p.value)
+    tempVal=c(valLag,rhoVals,pval)
+    adfValues=rbind(adfValues,tempVal)
+  }
+  return(adfValues)
+}
+#white Noise Test
+whiteNoiseFunction<-function(subset.data)
+{
+  boxValues<-NULL
+  for(boxlags in 1:4)
+  {
+    tempBox=Box.test(subset.data,lag=(6*boxlags))
+    #
+    chiSqVal=as.numeric(tempBox$statistic)
+    DF=as.numeric(tempBox$parameter)
+    pval=as.numeric(tempBox$p.value)
+    #     if(pval == 0)
+    #     {
+    #       pval<-"<2.2e-16"
+    #     }
+    tempVal=cbind(6*boxlags,chiSqVal,DF,pval)
+    boxValues<-rbind(boxValues,tempVal)
+  }
+  return(boxValues)
+}
+#unit root test
+unitRootFunction<-function(subset.data)
+{
+  adfValues<-NULL
+  tempadf=try(adf.test(subset.data,k=adflags),silent=TRUE)
+  if(class(tempadf)=="try-error")
+  {
+    tempadf=try(adf.test(subset.data,k=0),silent=TRUE)
+  }
+  for(adflags in 0:2)
+  {
+    tempadf=adf.test(subset.data,k=adflags)
+    valLag=as.numeric(tempadf$parameter)
+    rhoVals=as.numeric(tempadf$statistic)
+    pval=as.numeric(tempadf$p.value)
+    tempVal=c(valLag,rhoVals,pval)
+    adfValues=rbind(adfValues,tempVal)
+  }
+  return(adfValues)
+}
+#Pacf
+pacfFunction = function(subset.data)
+{
+  library(tseries)
+  #no_zeros<-length(which(subset.data!=0)==T)
+  
+  if(length(subset.data)<=1 | length(which(length(unique(subset.data)==1)==T)))
+  {
+    return(NULL)
+  }
+  val=pacf(x=subset.data,lag.max=24,plot=FALSE)
+  Lag=val$lag
+  Correlation=val$acf
+  StdErr=1.96/sqrt(length(subset.data))
+  StdErrX2=2*StdErr
+  Neg_StdErrX2 = -1*StdErrX2
+  result=cbind.data.frame(Lag,Correlation,StdErr,StdErrX2,Neg_StdErrX2)
+  return(result)
+}
+
+#Flow Starts
+load(paste(input_path,"/dataworking.RData",sep=""))
+inputdata <- dataworking
+#inputdata<-read.csv(paste(input_path,"dataworking.csv",sep="\\"))
+#checks for NA values and replaces with zero if any
+# inputdata[is.na(inputdata)] =0
+var_list<-unlist(strsplit(var_list,split=" ",fixed=TRUE))
+#Per Group By 
+if (as.integer(grp_no)!= 0)
+{
+  temp_var=paste("grp",grp_no,"_flag",sep="")  
+  index<-which(names(inputdata)==temp_var)
+  #-- #~!@#4493,new,eda,univariate,08feb2013,1618,vasanth
+  if(!exists('date_var')) date_var <- NULL
+  if(date_var=="") date_var<-NULL
+  #-- #~!@#4493,new,eda,univariate,08feb2013,1618,vasanth
+  univar_subset<-subset(inputdata,inputdata[index]==grp_flag,select=c(var_list,date_var,"primary_key_1644"))
+  #univar_subset[is.na(univar_subset)] =0
+}
+#Across Dataset
+if (as.integer(grp_no) == 0)
+{
+  if(!(date_var=="")){
+    univar_subset<- subset(dataworking, select= c(var_list,date_var,"primary_key_1644"))
+    #   univar_subset[is.na(univar_subset)] =0
+  }else{
+    univar_subset<- subset(dataworking, select= c(var_list,"primary_key_1644"))
+    #   univar_subset[is.na(univar_subset)] =0
+  }
+}
+rm("dataworking")
+naVarNames <- NULL
+for(v in var_list){
+  if(length(na.omit(univar_subset[,v])) == 0) naVarNames <- c(naVarNames,v)
+}
+if(length(naVarNames) > 0){
+  text <- paste("All values are missing in the variable(s) '",naVarNames,"'. Kindly deselect the variable(s).",sep="")
+  write(text,paste(output_path,"/error.txt",sep=''))
+}else{
+  if(nrow(univar_subset)!=0)
+  {
+    univar_subset[is.na(univar_subset)] =0
+    for(i in 1:length(var_list))
+    {
+      #summary 
+      result<-NULL
+      result<-univariateSummary(subset.data=univar_subset[,var_list[i]])
+      result<-cbind.data.frame(result,var_list[i])
+      colnames(result)<-c("statistic","estimate","variable")
+      result <- format(result,scientific=FALSE)
+      as<-result
+      write.csv(result, file=paste(output_path, var_id[i], "uni.csv", sep="/"), quote=FALSE, row.names=FALSE)
+      #       univarxml<- newXMLNode("TABLE")
+      #       for(univarcount in 1:nrow(result))
+      #       {
+      #         univarnode<-newXMLNode("UNIVARIATE",parent=univarxml)
+      #         univarvalue1<-newXMLNode("statstic",paste("Missing",sep=""),parent=univarnode)
+      #         univarvalue2<-newXMLNode("variable",var_list[i],parent=univarnode)
+      #         univarvalue3<-newXMLNode("statistic",result[univarcount,1],parent=univarnode)
+      #         univarvalue4<-newXMLNode("estimate",result[univarcount,2],parent=univarnode)
+      #       }
+      #       saveXML(univarxml,paste(output_path,var_id[i],"uni.xml",sep="/"))
+      
+      #Boxplot 
+      if(flag_box_plot){
+        result<-NULL
+        result<-boxplotfun(subset.data=univar_subset[,var_list[i]])
+        result <- as.data.frame(matrix(c(var_list[i],result),ncol=7))
+        colnames(result) <- c("variable","box_mean","p_0","p_25","p_50","p_75","p_100")
+        write.csv(result, file=paste(output_path, var_id[i], "boxplot.csv", sep="/"), quote=FALSE, row.names=FALSE)
+        #         bxpltxml<-newXMLNode("TABLE")
+        #         tempplot<-as.matrix(result)  
+        #         tempplot<-rbind(cbind("variable",var_list[i]),tempplot)
+        #         boxplotnode<-newXMLNode("BOXPLOT",parent=bxpltxml)
+        #         for( bxvalue  in 1:nrow(tempplot))
+        #         {
+        #           bxpltxmlnode1<-newXMLNode(tempplot[bxvalue,1],tempplot[bxvalue,2],parent=boxplotnode)
+        #         }  
+        #         saveXML(bxpltxml,paste(output_path,var_id[i],"boxplot.xml",sep="/"))
+      }
+      if(flag_runseq_plot){
+        # Run Sequence
+        result<-NULL
+        result<-cbind.data.frame(univar_subset[,var_list[i]],univar_subset["primary_key_1644"])
+        colnames(result)<-c("actual","primary_key")
+        result <- result[order(result$primary_key), ]
+        #########################   CREATING PNG GRAPH   
+        if(nrow(result)>5500){
+          png(filename=paste(output_path,var_id[i],"runsequence.png",sep="/"))
+          plot(x=result[,"primary_key"],y=result[,"actual"],xlab="primary_key",ylab="actual",type="n",col="#800000")
+          lines(x=result[,"primary_key"],y=result[,"actual"],xlab="primary_key",ylab="actual",type="l",col="#800000")
+          dev.off()
+        }
+        #########################      
+        write.csv(result,paste(output_path,var_id[i],"runsequence.csv",sep="/"),quote=F,row.names=F)
+        
+      }
+      if(flag_histogram){
+        #histogram
+        result<-NULL
+        histvector<-hist(as.numeric(univar_subset[,var_list[i]]),plot=FALSE)
+        result<-cbind(histvector$mids,histvector$counts)
+        colnames(result)<-c("increment","frequency")
+        #         ===========================================================
+        result <- format(result,scientific=FALSE)
+        #         ===========================================================
+        write.csv(result,paste(output_path,var_id[i],"histogram.csv",sep="/"),quote=F,row.names=F)
+        histxml<-newXMLNode("TABLE",parent=NULL)    
+        #         for(histcount in 1:nrow(result))
+        #         {
+        #           histnode<-newXMLNode("HISTOGRAM",parent=histxml)
+        #           histnodevalue<-newXMLNode("increment",result[histcount,1],parent=histnode)
+        #           histnodevalue<-newXMLNode("frequency",result[histcount,2],parent=histnode)
+        #         } 
+        #         write.csv(result, file=paste(output_path, var_id[i], "histogram.csv", sep="/"), quote=FALSE, row.names=FALSE)
+        #         saveXML(histxml,file=paste(output_path,var_id[i],"histogram.xml",sep="/"),quote=F,row.names=F)
+      }
+      if(flag_prob_plot){
+        #probplot
+        result<-NULL
+        result<-pplotFunction(univar_subset[,var_list[i]])
+        colnames(result)<-c("percentile","estimate")
+        write.csv(result, file=paste(output_path, var_id[i], "probplot.csv", sep="/"), quote=FALSE, row.names=FALSE)  
+        #         pplotxml<-newXMLNode("TABLE",parent=NULL)
+        #         pplotnode<-newXMLNode("PROBPLOT",parent=pplotxml)
+        #         for(pcount in 1:nrow(result))
+        #         {
+        #           pplotnode<-newXMLNode("PROBPLOT",parent=pplotxml)
+        #           ppltnodevalue1<-newXMLNode("percentile",result[pcount,1],parent=pplotnode)
+        #           ppltnodevalue2<-newXMLNode("estimate",result[pcount,2],parent=pplotnode)
+        #         }  
+        #         saveXML(pplotxml,file=paste(output_path,var_id[i],"probplot.xml",sep="/"),quote=F,row.names=F)
+      }
+      if(flag_timeSeries_plot){
+        #time series
+        result<-NULL
+        result<-cbind.data.frame(univar_subset[,var_list[i]],univar_subset[,date_var])
+        colnames(result)<-c(var_list[i],"Date")
+        form<-dateformat(result$Date)
+        result=result[with(result, order(as.Date(result$Date,format=form))), ]
+        #########################   CREATING PNG GRAPH 
+        if(nrow(result)>5500){
+          png(filename=paste(output_path,
+                             var_id[i],
+                             "timeseries.png",
+                             sep="/"))
+          x_temp <- dateformat(result[,"Date"])
+          x_temp <- as.Date(x = as.character(result[,"Date"]),
+                            format = x_temp)
+          n_temp <- order(x_temp)
+          plot(x=x_temp[n_temp],
+               y=result[n_temp,var_list[i]],
+               xlab=date_var,
+               ylab=var_list[i],
+               type="l",
+               col="#800000")
+          dev.off()
+        }
+        #########################       
+        write.csv(result,file=paste(output_path,var_id[i],"timeseries.csv",sep="/"),quote=F,row.names=F)
+      }
+      if(flag_seasonality_test){
+        #Seasonality Test
+        result<-NULL
+        res1<-try(seasonalityFunction(univar_subset[,var_list[i]]),silent=TRUE)
+        if(class(res1)=="try-error")
+        {
+          res1=matrix(0,3,3)
+        }
+        result<-rbind(result,res1)      
+        row.names(result)=NULL
+        result=as.data.frame(result)
+        result=cbind.data.frame(result,0,0,"Single Mean")
+        colnames(result)=c("Lags","Rho","ProbRho","Tau","ProbTau","Type")
+        col=c("Type","Lags","Rho","ProbRho","Tau","ProbTau")
+        result=result[col]
+        write.csv(result, file=   paste(output_path, var_id[i], "SeasonalityTests.csv", sep="/"), quote=FALSE, row.names=FALSE)
+      } 
+      if(flag_whiteNoise_test){
+        #White Noise Test
+        result<-NULL
+        result<-whiteNoiseFunction(univar_subset[,var_list[i]])
+        xax = acf(univar_subset[,var_list[i]], lag.max = 24, type = c("correlation"), plot = F, na.action = na.pass)
+        
+        One = as.data.frame(rbind(xax$acf[1],xax$acf[7],xax$acf[13],xax$acf[19]))
+        Two = as.data.frame(rbind(xax$acf[2],xax$acf[8],xax$acf[14],xax$acf[20]))
+        Three = as.data.frame(rbind(xax$acf[3],xax$acf[9],xax$acf[15],xax$acf[21]))
+        Four = as.data.frame(rbind(xax$acf[4],xax$acf[10],xax$acf[16],xax$acf[22]))
+        Five = as.data.frame(rbind(xax$acf[5],xax$acf[11],xax$acf[17],xax$acf[23]))
+        Six = as.data.frame(rbind(xax$acf[6],xax$acf[12],xax$acf[18],xax$acf[24]))
+        result<-cbind(result,One,Two,Three,Four,Five,Six)
+        colnames(result)<-c("ToLags","ChiSq","DF","ProbChiSq","One","Two","Three","Four","Five","Six")
+        write.csv(result, file=paste(output_path, var_id[i], "WhiteNoiseTest.csv", sep="/"), quote=FALSE, row.names=FALSE)
+      }
+      #Unit root
+      if(length(univar_subset[,var_list[i]]) > 7){
+        if(flag_unit_test){
+          result<-NULL      
+          res1<-try(unitRootFunction(univar_subset[,var_list[i]]),silent=T)
+          if(class(res1)=="try-error")
+          {
+            res1=matrix(0,3,3)
+          }
+          result<-rbind(result,res1)
+          result<-cbind(type="Zero Mean",result)
+          colnames(result)<-c("Type","Lags","Rho","ProbRho")
+          write.csv(result, file=paste(output_path, var_id[i], "UnitRootTests.csv", sep="/"), quote=FALSE, row.names=FALSE)
+        }
+      }
+      if(flag_pacf_plot){
+        #Pacf 
+        result<-NULL
+        
+        result<-pacfFunction(subset.data=univar_subset[,var_list[i]])
+        write.csv(result,paste(output_path,var_id[i],"_Partial_ACF_Sample.csv",sep="/"),quote=F,row.names=F) 
+        #         #Acf Function
+        #         result<-NULL
+        #         result<-acfFunction(subset.data=univar_subset[,var_list[i]])
+        #         result<-cbind(var_list[i],result)
+        #         colnames(result)[1]<-("variable_name")
+        #         result <- result[c("Lag","Correlation","variable_name","StdErr","StdErrX2","Neg_StdErrX2")]
+        #         write.csv(result,file=paste(output_path,var_id[i],"AutoCorrelation_Plot_Sample.csv",sep="/"),quote=F,row.names=F)
+        #generating XML
+        #         autocorrXML<-newXMLNode("TABLE",parent=NULL)
+        #         for(autocorrcount in 1:nrow(result))
+        #         {
+        #           autocorrnode<-newXMLNode("AUTOCORR",parent=autocorrXML)
+        #           autocorrvalue2<-newXMLNode("Autocorr",result[autocorrcount,2],parent=autocorrnode)
+        #         }
+        #         saveXML(autocorrXML,paste(output_path,var_id[i],"autocorrplot.xml",sep="/"))
+      }
+      if(flag_auto_corr){
+        #autocorr plot
+        result<-NULL
+        result<-acfFunction(subset.data=univar_subset[,var_list[i]])
+        result<-cbind(var_list[i],result)
+        colnames(result)[1]<-("variable_name")
+        result <- result[c("Lag","Correlation","variable_name","StdErr","StdErrX2","Neg_StdErrX2")]
+        write.csv(result,file=paste(output_path,var_id[i],"AutoCorrelation_Plot_Sample.csv",sep="/"),quote=F,row.names=F)   
+      }
+    }
+    write.table("EDA - VARIABLE_CHARACTERISTICS_COMPLETED",paste(output_path, "VARIABLE_CHARACTERISTICS_COMPLETED.txt", sep="/"),quote=F,row.names=F,col.names=F)
+  }else{
+    write.table("EDA - VARIABLE_CHARACTERISTICS_COMPLETED",paste(output_path, "VARIABLE_CHARACTERISTICS_COMPLETED.txt", sep="/"),quote=F,row.names=F,col.names=F)
+  }
+}

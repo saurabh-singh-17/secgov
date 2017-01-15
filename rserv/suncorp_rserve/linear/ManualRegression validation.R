@@ -1,0 +1,370 @@
+#------------------------------------------------------------------------------------------------------#                                                                                                  --#   
+#-- Process Name : MRx_Linear_Modeling validation.R                         
+#-- Description  : Performs Linear Operation     
+#-- Return type  : csv and XML              
+#-- Author : saurabh singh
+#------------------------------------------------------------------------------------------------------#
+
+#libraries Required.
+
+library(car)
+library(XML)
+library(QuantPsyc)
+library(Hmisc)
+library(lmtest)
+
+#reading the dataset----------------------------------------------------------------
+if(model_iteration == 1){
+#   dataworking<-read.csv(paste(input_path,"dataworking.csv",sep="/"))
+  load(paste(input_path,"dataworking.RData",sep="/"))
+}else{
+#   dataworking<-read.csv(paste(group_path,"bygroupdata.csv",sep="/"))
+  load(paste(group_path,"bygroupdata.RData",sep="/"))
+  dataworking = bygroupdata
+  rm("bygroupdata")
+}
+
+flag_bygrp_update="false"
+if(flag_bygrp_update == "true" & model_iteration != '1')
+{
+#   bygroup<- read.csv(paste(group_path,"bygroupdata.csv",sep="/"))
+  load(paste(group_path,"bygroupdata.RData",sep="/"))
+  bygroup = bygroupdata
+  rm("bygroupdata")
+#   datawork<- read.csv(paste(input_path,"dataworking.csv",sep="/"))
+  load(paste(input_path,"dataworking.RData",sep="/"))
+  datawork = dataworking
+  rm("dataworking")
+  dataworking<-merge(bygroup,datawork,all.x=TRUE,by="primary_key_1644")
+  col<-colnames(dataworking)
+  newcol<-col[-c(which(grepl("\\.y",col)))]
+  dataworking<-dataworking[newcol]
+  newcol<-gsub("\\.x","",newcol)
+  colnames(dataworking)<-newcol
+#   write.csv(dataworking,paste(group_path,"bygroupdata.csv",sep="/"))
+  bygroupdata <- dataworking
+  save(bygroupdata, file = paste(group_path,"bygroupdata.RData", sep="/"))
+  rm("bygroupdata")
+}
+#-------------reading the outdata of build scenario-------------------------
+
+outdatabuild<-read.csv(paste(input_path,"outdata.csv",sep="/"))
+
+#subset on group---------------------------------------------------------------------
+
+if (as.integer(grp_no)!= 0)
+{
+  temp_var=paste("grp",grp_no,"_flag",sep="")
+  
+  index<-which(names(dataworking)==temp_var)
+  dataworking<-subset(dataworking,dataworking[index]==grp_flag)
+  
+}
+
+#subset on validation----------------------------------------------------------------
+
+if(validation_var != "")
+{
+  col_num<-which(names(dataworking)==validation_var)
+  dataworking<-dataworking[which(dataworking[col_num]==0),]
+}
+#outlier_scenario-----------------------------------------------------------------------
+if(outlier_var != "")
+{
+  col_num<-which(names(dataworking)==outlier_var)
+  dataworking<-dataworking[which(dataworking[col_num]==1),]
+}
+
+#----------------missing values -------------------------------------------------------------
+
+missing_count<-as.data.frame(apply(dataworking[independent_variables],2,function(x){length(which(x==NA | x==""))}))
+missing_perc<-as.data.frame((missing_count/nrow(dataworking))*100)
+appData_missing<-cbind.data.frame(independent_variables,missing_count,missing_perc)
+colnames(appData_missing)<-c("variable","nmiss","miss_per")
+write.csv(appData_missing,file=paste(output_path,"appData_missing.csv",sep="/"),quote=FALSE,row.names=FALSE) 
+
+### missing calculation over-----------------------------------------------------------------------
+
+data<-dataworking[c(dependent_variable,independent_variables,"primary_key_1644")]
+data$actual<-data[,dependent_variable]
+
+variable<-colnames(data)
+if(length(which(is.na(data)==TRUE))){
+  index<-which(is.na(data)==TRUE)%%nrow(data)
+  if(length(which(index == 0))){index[c(which(index == 0))]=nrow(data)}
+  data<-data[-c(index),]
+}
+#formula creation for model---------------------------------------------------------------
+
+if(no_intercept_model=="true")
+{
+  formulaobj=paste(dependent_variable,"~",paste("0",paste(independent_variables,collapse="+"),sep="+"))
+}else{formulaobj=paste(dependent_variable,"~",paste(independent_variables,collapse="+"))
+}
+
+#linear regression-------------------------------------------------------------------------
+lmobjval <- lm(formulaobj,data=data)
+
+#Variable summary---------------------------------------------------------------------------
+
+freq<-rep(summary(lmobjval)$df[2],ncol(data))
+Mean=round(apply(as.matrix(data),2,mean),4)
+Min=round(apply(as.matrix(data),2,min),4)
+Max=round(apply(as.matrix(data),2,max),4)
+StdDev=round(apply(as.matrix(data),2,sd),4)
+variablesummary<-as.data.frame(cbind(variable,freq,Mean,Min,Max,StdDev))
+colnames(variablesummary)[1:2]<-c("Variable","Freq")
+
+
+#Parameter_estimates---------------------------------------------------------------------------
+
+lmtable<-coef(summary(lmobjval))
+independent_variables2<-independent_variables
+vif1<-data.frame(rep("NA",nrow(lmtable)))
+if(length(which(is.na(coefficients(lmobjval)))) == 0)
+{
+  try(vif1<-vif(lmobjval),silent=TRUE)
+}else{
+  
+  independent_variables2<-row.names(lmtable)
+  #formula creation for model---------------------------------------------------------------
+  if(no_intercept_model=="true"){
+    formulaobj=paste(dependent_variable,"~",paste("0",paste(independent_variables2,collapse="+"),sep="+"))
+  }else{
+    independent_variables2<-independent_variables2[-1]
+    formulaobj=paste(dependent_variable,"~",paste(independent_variables2,collapse="+"))
+  }
+  
+  #linear regression-------------------------------------------------------------------------
+  lmobj2 <- lm(formulaobj,data=data)
+  vif1<-vif(lmobj2)
+}
+
+#-------------------------stdest----------------------
+
+modelVar = c(dependent_variable,independent_variables2)
+summaryResult=apply(data[modelVar],2,sd)
+sdDF = summaryResult
+sd_variables= sdDF
+
+std_estimates =function (estimates,sd) 
+{
+  if(no_intercept_model == "false")
+  {
+    b <- estimates[-1]
+  }else{
+    b <- estimates}
+  sx <- sd[-1]
+  sy <- sd[1]
+  beta <- b * sx/sy
+  return(beta)
+}
+
+stdest<-try(std_estimates(estimates=lmobj2$coefficients ,sd =sd_variables),silent=T)
+if(class(stdest) == "try-error")
+{
+  stdest<-std_estimates(estimates=lmobjval$coefficients ,sd =sd_variables)
+}
+if(no_intercept_model == "false")
+{
+  stdest<-c(0,stdest)
+}
+
+
+#----------------------------------------------------------------------------
+fdummy<-summary(lmobjval)$fstatistic
+hetroskedasticityPvalue<-as.data.frame(rep(pf(fdummy[1],fdummy[2],fdummy[3],lower.tail=TRUE),nrow(lmtable)))
+Model<-rep(paste("MODEL",dependent_var_no,sep=""),nrow(lmtable))
+Dependent<-rep(dependent_variable,nrow(lmtable))
+DF<-rep(model_iteration,nrow(lmtable))
+#------------------------------------------------------
+if(no_intercept_model=="false")
+{
+  vif1<-c("0",vif1)
+}
+paramest<-as.data.frame(cbind(Model,Dependent,row.names(lmtable),DF,lmtable,stdest,vif1,hetroskedasticityPvalue))
+colnames(paramest)<-c("Model","Dependent","Original_Variable","DF","Original_Estimate","Original_StdErr","Original_tValue","Original_Probt","Original_StandardizedEst","Original_VarianceInflation","Heteroskedastic_P_Value")
+
+
+#ActualsVsPredicted-------------------------------------------------------------------------------------
+
+actual<-as.data.frame(lmobjval$mode[1])
+residuals<-as.data.frame(round(residuals(lmobjval),4))
+predicted<-as.data.frame(round(fitted(lmobjval),4))
+std_pred<-scale(predicted[,1])
+leverage<-((std_pred^2) + 1)/nrow(predicted)
+actvspred<-cbind.data.frame(actual,predicted,residuals,leverage)
+colnames(actvspred)<-c("actual","pred","res","leverage")
+
+#Modelstats---------------------------------------------------------------------------------------
+
+variables_used<-length(independent_variables2)
+observations_used<-nrow(data)
+
+#---------------------MAPE--------------------------
+calcMape = function(actual, predicted) 
+{    #Removing NA and zero values from the actual vector 
+  
+  index = (1:nrow(actual))[!is.na(actual)] 
+  index = index[actual[index,1] != 0] 
+  actual = actual[index,1] 
+  predicted = predicted[index,1] 
+  mape = mean(abs((actual - predicted)/actual))*100 
+  return(mape) 
+}
+mape<-calcMape(actual,predicted)
+#-----------------------------------------------------
+rsquare<-summary(lmobjval)$r.squared
+adjrsq<-summary(lmobjval)$adj.r.squared
+aic<-AIC(lmobjval)
+dependentmean<-mean(data[dependent_variable])
+rmserror<-summary(lmobjval)$sigma
+fdummy<-summary(lmobjval)$fstatistic
+fvalue<-summary(lmobjval)$fstatistic[1]
+dwstatistic<-try(as.numeric(dwtest(lmobjval)[1]),silent=T)
+if(class(dwstatistic) == "try-error")
+{
+  dwstatistic<-'NA'
+}
+firstordercorrelation<-c("0")
+pvaluemodel<-pf(fdummy[1],fdummy[2],fdummy[3],lower.tail=FALSE)
+heteroskedastic_pvalue<-pf(fdummy[1],fdummy[2],fdummy[3],lower.tail=TRUE)
+modelstats<-cbind(variables_used,observations_used,rsquare,aic,adjrsq,dwstatistic,firstordercorrelation,dependentmean,rmserror,pvaluemodel,fvalue,mape,heteroskedastic_pvalue)
+
+#outdata-------------------------------------------------------------------------------
+avp<-actvspred
+colnames(avp)<-c(paste(dependent_variable,"1",sep=""),"pred","res","leverage")
+avp$modres<-abs(avp$res)
+avp$mapeindi<-(avp[,5]/avp[,1])*100
+outdata<-cbind.data.frame(data,avp)
+
+
+
+#----------------out_betas---------------------------------------------------------------
+
+out_betas<-NULL
+MODEL<-rep(paste("MODEL",dependent_var_no,sep=""),6)
+TYPE<-c("PARMS","STDERR","T","PVALUE","L95B","U95B")
+DEPVAR<-rep(dependent_variable,6)
+RMSE<-rep(summary(lmobjval)$sigma,6)
+lmtablet<-t(lmtable)
+L95B<-lmtablet[1,]-(2*lmtablet[2,])
+U95B<-lmtablet[1,]+(2*lmtablet[2,])
+lmtablet<-rbind(lmtablet,L95B,U95B)
+coldv<-c(dependent_variable,"","","","","")
+IN<-c(length(independent_variables),"","","","","")
+P<-c(length(independent_variables)+1,"","","","","")
+EDF<-c(summary(lmobjval)$df[2],"","","","","")
+RSQ<-c(summary(lmobjval)$adj.r.squared,"","","","","")
+AIC<-c(AIC(lmobjval),"","","","","")
+out_betas<-cbind(MODEL,TYPE,DEPVAR,RMSE,lmtablet,L95B,U95B,coldv,IN,P,EDF,RSQ,AIC)
+colnames(out_betas)[which(colnames(out_betas)=="(Intercept)")]<-"Intercept"
+colnames(out_betas)[which(colnames(out_betas)=="coldv")]<-dependent_variable
+try({
+#---------------------- getting the hit rate tables------------------------------------------
+
+#customized fuction to create divide in equal number of groups ------------------------------ 
+
+cut_func<-function(x){
+    prim<-seq(1,length(x),1)
+    data_cut<-cbind(x,prim)
+    data_cut<-data_cut[c(order(data_cut[,1])),]
+    rank<-cut(prim,10)
+    data_cut<-cbind(data_cut,rank)
+    data_cut<-as.data.frame(data_cut)
+    data_cut<-data_cut[c(order(data_cut[,"prim"])),]
+    return(data_cut[,3])
+}
+rankfinal1<-NULL
+funcrank<-function(x){cutdata<-cut_func(x)
+                      if(is.null(rankfinal1)){rankfinal1<-cutdata}else{
+                        rankfinal1<-cbind.data.frame(rankfinal1,as.data.frame(cutdata))}
+                      return(rankfinal1)}
+  hitrate<- function(inputdata){
+  hitdata1<-apply(inputdata[c(which(colnames(inputdata) == "actual" | colnames(inputdata) == "pred"))],2,cut_func)
+  colnames(hitdata1)<-c("rank_actual","rank_pred")
+  hitdata1<-as.data.frame(hitdata1)
+  #hitdata2<-cbind(inputdata[c("actual","pred")],hitdata1)
+  hitdata1$dummy=0
+  hitdata2<-aggregate(hitdata1$dummy,hitdata1[,c(1,2)],length)
+  colnames(hitdata2)[3]<-"NObs"
+  hitdata3<-hitdata2[c(which(hitdata2$rank_actual == hitdata2$rank_pred)),]
+  sum1<-sum(hitdata3$NObs)
+  hitrate<-(sum1/nrow(inputdata)*100)
+  return(hitrate)          
+}
+
+hitrate_val<- hitrate(outdata)
+hitrate_build<-hitrate(outdatabuild)
+
+mapebuild<-calcMape(outdatabuild["actual"],outdatabuild["pred"])
+build<-c(mapebuild,hitrate_build)
+validation<-c(mape,hitrate_val)
+metric<-c("mape","hit_rate")
+mapehit<-cbind(metric,build,validation)
+
+#---------rank order file-------------------------------------------------------------------
+
+rankorder<- function(inputdata){
+  rankorder1<-apply(inputdata[c(which(colnames(inputdata) == "actual" | colnames(inputdata) == "pred"))],2,cut_func)
+  colnames(rankorder1)<-c("rank_actual","rank_pred")
+  ro2<-cbind(inputdata[c("actual","pred")],rankorder1)
+  ro2$dummy=0
+  ro3<-aggregate(ro2$dummy,ro2[c(3,4)],length)
+  colnames(ro3)[3]<-"NObs"
+  ro3<-ro3[c(which(ro3$rank_actual == ro3$rank_pred)),]
+  meantable<-aggregate(ro2[,c("actual","pred")],ro2["rank_actual"],mean)
+  final1<-merge(ro3,meantable,by="rank_actual",all=FALSE)
+  return(final1)
+}
+
+rankorderval<-rankorder(outdata)
+rankorderbuild<-rankorder(outdatabuild)
+rankorderbuild$Nobs_Sum<-nrow(outdatabuild)
+rankorderbuild$hit<-sum(rankorderbuild$NObs)
+colnames(rankorderbuild)[c(which(colnames(rankorderbuild)=="actual"))]<-"v_actual_mean"
+colnames(rankorderbuild)[c(which(colnames(rankorderbuild)=="pred"))]<-"v_pred_mean"
+colnames(rankorderval)[c(which(colnames(rankorderval)=="actual"))]<-"actual_mean"
+colnames(rankorderval)[[c(which(colnames(rankorderval)=="pred"))]]<-"pred_mean"
+rankordereval<-merge(as.matrix(rankorderbuild[c(2,which(colnames(rankorderbuild)== "v_actual_mean" | colnames(rankorderbuild)== "v_pred_mean"))]),as.matrix(rankorderval[c("rank_pred","actual_mean","pred_mean")]),by="rank_pred",all.x=TRUE)
+rankordereval[,1]<-as.numeric(rankordereval[,1])
+colnames(rankordereval) <- gsub(pattern="rank_pred",replacement="rank_actual",x=colnames(rankordereval))
+
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#writing the CSV and XML-----------------------------------------------------------------
+#-----------------------hitratetable-----------------------------------------------------
+write.csv(mapehit,file=paste(output_path,"mapehitfile.csv",sep="/"),quote=FALSE,row.names=FALSE)
+
+
+#-------------------------rankorderfile---------------------------------------------------
+write.csv(rankorderbuild,file=paste(input_path,"rankorderfile.csv",sep="/"),quote=FALSE,row.names=FALSE)
+write.csv(rankordereval,file=paste(output_path,"rankorderfile.csv",sep="/"),quote=FALSE,row.names=FALSE)
+
+},silent=T)
+#-------------modelstats------------------------------------------------------------------
+write.csv(modelstats,file=paste(output_path,"stats.csv",sep="/"),quote=FALSE,row.names=FALSE)
+
+#------------------------actual vs predicted----------------------------------------------
+
+write.csv(actvspred,file=paste(output_path,"normal_chart.csv",sep="/"),quote=FALSE,row.names=FALSE)
+
+#----------------------parameter estimates---------------------------------------------
+if(no_intercept_model=="false")
+{ 
+  paramest$Original_Variable<-as.character(paramest$Original_Variable)
+  paramest[1,"Original_Variable"]<-"Intercept"
+}
+write.csv(paramest,file=paste(output_path,"estimates.csv",sep="/"),quote=FALSE,row.names=FALSE)
+
+#------------------------outdata-----------------------------------------------------------
+write.csv(outdata,file=paste(output_path,"outdata.csv",sep="/"),quote=FALSE,row.names=FALSE)
+#----------------------------------------------------------------------------------------
+
+#------------------------out_betas-----------------------------------------------------------
+write.csv(out_betas,file=paste(output_path,"out_betas.csv",sep="/"),quote=FALSE,row.names=FALSE)
+#----------------------------------------------------------------------------------------
+
+#-----------------------saving the linear model object---------------------------------
+
+
+write.table("Manual Regression",paste(output_path,"LINEAR_REGRESSION_VALIDATION_COMPLETED.txt",sep="/"),quote=F,row.names=F,col.names=F)

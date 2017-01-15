@@ -1,0 +1,175 @@
+
+#------------------------------------------------------------------------------------------------------#                                                                                                  --#   
+#-- Project Name :  MRx_Panel Creation                                                         --#
+#-- Description  :  Creates pane;                   --#
+#-- Return type  :  Creates Panel                           --#
+#-- Author       :  Arun PIllai                                                              --#                 
+#------------------------------------------------------------------------------------------------------#
+
+library(XML)
+library(stringr)
+#in.data <- read.csv(paste(input_path,"dataworking.csv",sep="/"))
+load(paste(input_path,"dataworking.RData",sep="/"))
+in.data <- dataworking
+rm("dataworking")
+GRP1=eval(parse(text=paste("GRP",start_grp,sep="")))
+data=in.data[GRP1]
+
+if(ncol(data) ==1)
+{
+  result=rep(1,nrow(data))
+  uniqVal=as.character(unique(data[,1]))
+  for( i in 1:length(uniqVal))
+  {
+    index=which(data==uniqVal[i])
+    result[index]=i
+  }
+  KEY_NAME=apply(data,1,function(x){paste(GRP1,"=",x)})
+  result=cbind(KEY_NAME,paste(result,"_1_1",sep=""),uniqVal[result])
+  result <- as.data.frame(apply(result,2,str_trim))
+  colnames(result)=c("KEY_NAME","FLAG",GRP1)
+}
+
+if(ncol(data) ==2)
+{
+  
+  res1=rep(1,nrow(data))
+  res2=rep(1,nrow(data))
+  val1=as.character(unique(data[,1]))
+  val2=as.character(unique(data[,2]))
+  
+  for(i in 1:length(val1))
+  {
+    temp=data[GRP1[1]]
+    index=which(temp==val1[i])
+    res1[index]=i
+  }
+  
+  for(j in 1:length(val2))
+  {
+    temp=data[GRP1[2]]
+    index=which(temp==val2[j])
+    res2[index]=j
+  }
+  result=cbind(paste(res1,res2,"1",sep="_"),val1[res1],val2[res2])
+  result <- as.data.frame(apply(result,2,str_trim))
+  colnames(result)=c("FLAG",GRP1)
+  KEY_NAME= apply(result,1,function(x){paste(GRP1[1],"=",x[2],"_",GRP1[2],"=",x[3],sep="")})
+  result=cbind(KEY_NAME,result)
+}
+
+
+if(ncol(data) ==3)
+{
+  res1=rep(1,nrow(data))
+  res2=rep(1,nrow(data))
+  res3=rep(1,nrow(data))
+  val1=as.character(unique(data[,1]))
+  val2=as.character(unique(data[,2]))
+  val3=as.character(unique(data[,3]))
+  for(i in 1:length(val1))
+  {
+    temp=data[GRP1[1]]
+    index=which(temp==val1[i])
+    res1[index]=i
+  }
+  for(j in 1:length(val2))
+  {
+    temp=data[GRP1[2]]
+    index=which(temp==val2[j])
+    res2[index]=j
+  }
+  for(k in 1:length(val3))
+  {
+    temp=data[GRP1[3]]
+    index=which(temp==val3[k])
+    res3[index]=k
+  }
+  result=cbind(paste(res1,res2,res3,sep="_"),val1[res1],val2[res2],val3[res3])
+  result <- as.data.frame(apply(result,2,str_trim))
+  colnames(result)=c("FLAG",GRP1)
+  KEY_NAME= apply(result,1,function(x){paste(GRP1[1],"=",x[2],"_",GRP1[2],"=",x[3],"_",GRP1[3],"=",x[4],sep="")})
+  result=cbind(KEY_NAME,result)
+  }
+tempVal=result[,2]
+in.data=cbind.data.frame(in.data,tempVal)
+names(in.data)[ncol(in.data)]=paste("grp",start_grp,"_flag",sep="")
+
+
+dataworking <- in.data
+write.csv(dataworking, file = paste(input_path,"dataworking.csv",sep=""),row.names=FALSE,quote=FALSE)
+save(dataworking, file = paste(input_path,"dataworking.RData",sep=""))
+result=unique(result)
+
+len=length(GRP1)
+orderVar=len:1
+varlist=c("KEY_NAME","FLAG",GRP1[orderVar])
+
+byvarCSV=as.data.frame(result)
+byvarCSV<-na.omit(byvarCSV)
+byvarCSV=byvarCSV[varlist]
+#dir.create(paste(output_path,start_grp,sep=""))
+write.csv(byvarCSV,paste(output_path,start_grp,"/byvar.csv",sep=""),row.names=FALSE,quote=FALSE)
+
+xmldata =as.data.frame(byvarCSV)
+#getting the index  and removing the index
+index<-which(names(xmldata)=="KEY_NAME")
+xmldata<-xmldata[-index]
+#removing the column value
+index<-which(names(xmldata)=="FLAG")
+flagvar<-as.vector(xmldata[,index])
+xmldata<-xmldata[-index]
+#number of columnbs
+numberofcolumns<-as.integer(ncol(xmldata))
+#temp variable count
+count<-1
+#creating xml file
+xmlfile<-newXMLNode("TABLE")
+# looping to iterate through the xml file
+for(i in  1:nrow(xmldata))
+{
+  #create sub node 
+  xmlnodeforfile<-newXMLNode("BYVAR",parent=xmlfile)
+  #iterate till the no of columns
+  count<-1
+  for(j in numberofcolumns:1)
+  {
+    #dynamically adding the count to create tha  node name 
+    newXMLNode(paste("var",count,sep=""),as.character(xmldata[i,j]),parent=xmlnodeforfile)
+    count<-count+1
+  }
+  #flag variable
+  newXMLNode("flag",as.character(flagvar[i]),parent=xmlnodeforfile)
+}
+saveXML(xmlfile,paste(output_path,start_grp,"byvar.xml",sep="/"))
+
+
+
+#byvar Keys
+
+
+xmlfile<-newXMLNode("TABLE")
+# looping to iterate through the xml file
+
+columns=colnames(result)
+for(i in  1:nrow(result))
+{
+  #create sub node 
+  xmlnodeforfile<-newXMLNode("KEY_NAMES",parent=xmlfile)
+  #iterate till the no of columns
+  
+  for( j in 1:len)
+  {
+    newXMLNode(columns[j+2],as.character(result[i,j+2]),parent=xmlnodeforfile)
+  }
+  newXMLNode("flag",as.character(result[i,2]),parent=xmlnodeforfile)
+  newXMLNode("key_name",as.character(result[i,1]),parent=xmlnodeforfile)
+
+}
+
+saveXML(xmlfile,paste(output_path,start_grp,"byvar_keys.xml",sep="/"))
+
+
+write("PANEL_CREATION_COMPLETED", file = paste(output_path,start_grp, "PANEL_CREATION_COMPLETED.TXT", sep="/"))
+
+

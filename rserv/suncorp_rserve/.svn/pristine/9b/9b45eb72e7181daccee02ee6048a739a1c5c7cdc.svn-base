@@ -1,0 +1,46 @@
+inputData=read.csv(paste(input_path,dataset_name,sep="\\"))
+colnames<-colnames(inputData)
+nrow<-nrow(inputData)
+nobs<-as.data.frame(nrow)
+colnames(nobs)<-("nobs")
+write.csv(nrow, paste(output_path,file = "nobs.csv",sep="/"), quote=FALSE, row.names=FALSE)
+ if (veiw_type=="sequential")
+  {
+   if(flag=="true")
+     {
+     if(nrow<600)
+     {     
+       subset<-inputData[c(1:nrow),]
+     }
+   else
+    {
+     subset<-inputData[c(1:600),] 
+    }
+  }
+   else
+  {
+     subset<-inputData[c(start_row:end_row),]
+  }
+ }
+    
+if (veiw_type == "random")
+{
+subset<- inputData[sample(1:nrow(inputData), random_sample,
+                          replace=FALSE),]
+}
+
+if (veiw_type=="unique")
+{
+  output      <- lapply(inputData,unique)
+  maxLen      <- max(sapply(output,length))
+  for(i in seq_along(output)){
+    output[[i]] <- as.character(output[[i]])[order(x=as.numeric(as.character(output[[i]])),na.last=T)]
+    output[[i]][which(as.character(output[[i]])=='')] <- 'MISSING'
+    output[[i]] <- c(output[[i]],rep("", maxLen - length(output[[i]])))
+  }
+ subset<- as.data.frame(output)
+}
+
+write.csv(subset, paste(output_path,file = "subset_data.csv",sep="/"), quote=FALSE, row.names=FALSE)
+write("SUBSET_COMPLETED", file = paste(output_path, "SUBSET_COMPLETED.TXT", sep="/"))
+

@@ -1,0 +1,241 @@
+#===========================Project Header=============================
+#Process Name: Creates adtsock variables
+#Description: Creates  adstcok variables
+#Return type: 
+#Created Date : 20-9-2012
+#Author : Jeevitha
+#=======================================================================
+library(reshape)
+if (file.exists(file=paste(output_path,"/error.txt",sep="")))
+{
+  unlink(paste(output_path,"/error.txt",sep=""),recursive = FALSE, force = FALSE)
+}
+#reading data
+# inputdata<-read.csv(paste(input_path,"/dataworking.csv",sep=""))
+load(paste(input_path,"/dataworking.RData",sep=""))
+inputdata <- dataworking
+rm("dataworking")
+
+#variableindex<-which(colnames(inputdata)==var_name)
+grp_vars=unlist(strsplit(grp_vars,split=" ",fixed=TRUE))
+data<-inputdata[c(var_name,grp_vars)]
+#pasting grp vars together
+newVar=apply(data[grp_vars],1,function(x){paste(x,collapse="_")})
+data=cbind.data.frame(data,newVar)
+decay_rate<-unlist(strsplit(decay_rate,split="!!"))
+uniqueValues<-unique(newVar)
+newDecayRate=gsub(".","_",decay_rate,fixed=TRUE)
+
+corr<-NULL
+adStockDF<-NULL
+
+if(eqn_type=="simple")
+{
+  #index of the  cmobined Var
+  index<-which(colnames(data)=="newVar")
+  #variable index
+  var.index<-which(colnames(data)==var_name)
+  #dep.index
+  dep.index<-which(colnames(inputdata)==dependent_variable)
+  #date.index
+  date.index=which(colnames(inputdata)==date_variable)
+  for( i in 1:length(decay_rate))
+  {
+    count<-1
+    indexlist<-NULL
+    newVar<-NULL
+    panelIndex<-NULL
+    indexlist<-NULL    
+    for( j in 1:length(uniqueValues))
+    {
+      #panelColumn
+      panelColumn<-subset(data,data[index]==uniqueValues[j])
+      panelColumn=panelColumn[1]          
+      panelIndex<-as.integer(row.names(panelColumn))
+      indexlist<-c(indexlist,panelIndex)
+      #iterating till the no of panel index for a  level
+      for( t in 1:length(panelIndex))
+      {
+        if(t==1)  {
+          newVar[count]=data[panelIndex[t],var.index]
+          count<-count+1  
+        }
+        else   {
+          newVar[count]<-data[panelIndex[t-1],var.index]+data[panelIndex[t],var.index]*as.numeric(decay_rate[i])
+          count<-count+1      
+        }
+      }
+    }
+    adstockVar<-NULL
+    for(merge in 1:nrow(inputdata))
+    {
+      adstockVar[merge]<-newVar[indexlist[merge]]
+    }
+    #creating Adstock
+    corr[i]=cor(inputdata[,dep.index],newVar,use="na.or.complete")
+    adStockDF=as.data.frame(cbind(adStockDF,adstockVar))        
+    nameForAdstock<-paste("ads_",var_name,"_",as.character(newDecayRate[i]),sep="")
+    
+    
+    colnames(adStockDF)[i]=paste("ads_",var_name,"_",as.character(newDecayRate[i]),sep="")
+    
+  }
+  corrDF=as.data.frame(cbind(c(dependent_variable,colnames(adStockDF)),c(1,corr),c("",as.character(decay_rate))))
+  newvarDF=as.data.frame(cbind(inputdata[,dep.index],inputdata[,date.index],adStockDF))
+  colnames(corrDF)=c("actual_name","correlation","decay")
+  cordep<-cor(inputdata[var_name],inputdata[dependent_variable],use="na.or.complete")
+  cordep<-cbind(row.names(cordep),cordep)
+  colnames(cordep)<-c("actual_name","correlation")
+  corrDF<-rbind.fill(corrDF,as.data.frame(cordep))
+  corrDF[nrow(corrDF),ncol(corrDF)]<-""  
+  colnames(newvarDF)[1:2]=c(dependent_variable,date_variable)
+  newvarDF<-cbind.data.frame(inputdata[var_name],newvarDF)
+  
+  # Removing the dependent variable from the below 2 CSVs
+  index    <- which(as.character(corrDF$actual_name) %in% dependent_variable)
+  corrDF   <- corrDF[-index,]
+  index    <- which(colnames(newvarDF) %in% dependent_variable)
+  newvarDF <- newvarDF[,-index]
+  
+  write.csv(corrDF,paste(output_path,"/correlation_table.csv",sep=""),row.names=F,quote=F)
+  
+  #-------------------------------------------------------------------------------
+  # 6000 check
+  #-------------------------------------------------------------------------------
+  if (nrow(newvarDF) > 6000) {
+    x_temp                       <- sample(x=nrow(newvarDF),
+                                           size=6000,
+                                           replace=FALSE)
+    newvarDF                     <- newvarDF[x_temp, , drop=FALSE]
+  }
+  #-------------------------------------------------------------------------------
+  
+  write.csv(newvarDF,paste(output_path,"/adstockVarCreation_viewPane.csv",sep=""),row.names=F,quote=F)
+  
+  if(mode=="confirm"){
+    selected_vars<-unlist(strsplit(selected_vars,split=" "))
+    inputdata=cbind.data.frame(inputdata,adStockDF[,selected_vars])
+    colnames(inputdata)[(ncol(inputdata)-length(selected_vars)+1):ncol(inputdata)] <- selected_vars
+    write.csv(inputdata,paste(input_path,"/dataworking.csv",sep=""),row.names=F,quote=F)
+    dataworking <- inputdata
+    save(dataworking,file=paste(input_path,"/dataworking.RData",sep=""))
+    rm("dataworking")
+    write(x="New Variable Created",file=paste(output_path,"/New Variable Created.txt",sep=""))
+  }
+  write(x="ADSTOCK_VARIABLE_CREATION_COMPLETED",
+        file=paste(output_path,"/ADSTOCK_VARIABLE_CREATION_COMPLETED.txt",
+                   sep=""))
+}
+
+error <- 0
+if(eqn_type=="log"){
+  if(length(which(inputdata[,var_name] <= 0)) | length(which(is.na(inputdata[,var_name])))){
+    error <- 1
+    errorText <- NULL
+    if(length(which(inputdata[,var_name] == 0))){
+      errorText <- paste(errorText,"The variable ",var_name," has ",length(which(inputdata[,var_name] == 0))," number of values as 0.",sep="")
+    }
+    if(length(which(inputdata[,var_name] < 0))){
+      errorText <- paste(errorText,"The variable ",var_name," has ",length(which(inputdata[,var_name] < 0))," number of values as negative.",sep="")
+    }
+    if(length(which(is.na(inputdata[,var_name])))){
+      errorText <- paste(errorText,"The variable ",var_name," has ",length(which(is.na(inputdata[,var_name])))," number of values as missing.",sep="")
+    }
+    write(errorText,file=paste(output_path,"/error.txt",sep=""))
+  }
+}
+
+if(eqn_type=="log" & error==0)
+{
+  #index of the  cmobined Var
+  index<-which(colnames(data)=="newVar")
+  #variable index
+  var.index<-which(colnames(data)==var_name)
+  #dep.index
+  dep.index<-which(colnames(inputdata)==dependent_variable)
+  #date.index
+  date.index=which(colnames(inputdata)==date_variable)
+  for( i in 1:length(decay_rate))
+  {
+    count<-1
+    indexlist<-NULL
+    newVar<-NULL
+    panelIndex<-NULL
+    indexlist<-NULL    
+    for( j in 1:length(uniqueValues))
+    {
+      #panelColumn
+      panelColumn<-subset(data,data[index]==uniqueValues[j])
+      panelColumn=panelColumn[1]          
+      panelIndex<-as.integer(row.names(panelColumn))
+      indexlist<-c(indexlist,panelIndex)
+      #iterating till the no of panel index for a  level
+      for( t in 1:length(panelIndex))
+      {
+        if(t==1)  {
+          newVar[count]=data[panelIndex[t],var.index]
+          count<-count+1  
+        }
+        else   {
+          newVar[count]<-log1p(data[panelIndex[t-1],var.index])+log1p(data[panelIndex[t],var.index])*as.numeric(decay_rate[i])
+          count<-count+1      
+        }
+      }
+    }
+    adstockVar<-NULL
+    for(merge in 1:nrow(inputdata))
+    {
+      adstockVar[merge]<-newVar[indexlist[merge]]
+    }
+    #creating Adstock
+    corr[i]=cor(inputdata[,dep.index],newVar,use="na.or.complete")
+    adStockDF=as.data.frame(cbind(adStockDF,adstockVar))        
+    nameForAdstock<-paste("adl_",var_name,"_",as.character(newDecayRate[i]),sep="")
+    
+    
+    colnames(adStockDF)[i]=paste("adl_",var_name,"_",as.character(newDecayRate[i]),sep="")
+    
+  }
+  corrDF=as.data.frame(cbind(c(dependent_variable,colnames(adStockDF)),c(1,corr),c("",as.character(decay_rate))))
+  newvarDF=as.data.frame(cbind(inputdata[,dep.index],inputdata[,date.index],adStockDF))
+  colnames(corrDF)=c("actual_name","correlation","decay")
+  cordep<-cor(inputdata[dependent_variable],inputdata[dependent_variable],use="na.or.complete")
+  cordep<-cbind(row.names(cordep),cordep)
+  colnames(cordep)<-c("actual_name","correlation")
+  corrDF<-rbind.fill(corrDF,as.data.frame(cordep))
+  corrDF[nrow(corrDF),ncol(corrDF)]<-""
+  colnames(newvarDF)[1:2]=c(dependent_variable,date_variable)
+  newvarDF<-cbind.data.frame(inputdata[var_name],newvarDF)
+  
+  # Removing the dependent variable from the below 2 CSVs
+  index    <- which(as.character(corrDF$actual_name) %in% dependent_variable)
+  corrDF   <- corrDF[-index,]
+  index    <- which(colnames(newvarDF) %in% dependent_variable)
+  newvarDF <- newvarDF[,-index]
+  
+  write.csv(corrDF,paste(output_path,"/correlation_table.csv",sep=""),row.names=F,quote=F)
+  write.csv(newvarDF,paste(output_path,"/adstockVarCreation_viewPane.csv",sep=""),row.names=F,quote=F)
+  
+  if(mode=="confirm"){
+    selected_vars<-unlist(strsplit(selected_vars,split=" "))
+    indexToAdd<-which(colnames(adStockDF) %in% selected_vars)
+    inputdata=as.data.frame(cbind(inputdata,adStockDF[,selected_vars]))
+    colnames(inputdata)[(ncol(inputdata)-length(selected_vars)+1):ncol(inputdata)]=selected_vars
+    write.csv(inputdata,paste(input_path,"/dataworking.csv",sep=""),row.names=F,quote=F)
+    dataworking <- inputdata
+    save(dataworking,file=paste(input_path,"/dataworking.RData",sep=""))
+   # loadcmp(paste(genericCode_path,"datasetprop_update.Rc",sep="/"))
+    write(x="New Variable Created",file=paste(output_path,"/New Variable Created.txt",sep=""))
+   
+   #-------------------------------------------------------------------------------
+   # update the dataset properties
+   #-------------------------------------------------------------------------------
+   source(paste(genericCode_path,"datasetprop_update.R",sep="/"))
+   #-------------------------------------------------------------------------------
+   
+  }
+  
+  write(x="ADSTOCK_VARIABLE_CREATION_COMPLETED",
+        file=paste(output_path,"/ADSTOCK_VARIABLE_CREATION_COMPLETED.txt",
+                   sep=""))
+}

@@ -1,0 +1,23 @@
+
+paramCSV <- read.csv("params.csv")
+  params <- names(paramCSV)
+  params <- params[which(params %in% colnames(df))]
+
+df <- df[params]
+ cordf <- cor(df, use="pairwise.complete.obs")
+ 
+ ynames <- dimnames(cordf)[1]
+ toolnames <- unlist(ynames)
+
+NodeDescMap <- data.frame(c(1:length(toolnames)),toolnames)
+  rownames(NodeDescMap) <- NULL
+  colnames(NodeDescMap) <- c("index","variables")
+
+  print(NodeDescMap)
+  write.csv(NodeDescMap, file = "var_index.csv", quote=FALSE, row.names=FALSE)
+
+
+qgraph(cordf,filetype ='png',filename = 'correlation_structure')
+ qgraph(cordf,filetype ='png',filename = 'association',minimum=.3,mode='strength',cut=.5,directed=TRUE,layout='spring',details=TRUE,edge.labels=TRUE,edge.label.cex=.6, asize=.1,graph='association')
+ qgraph(cordf,filetype ='png',filename = 'concentration',minimum=.1,mode='strength',cut=.5,directed=TRUE,layout='spring',details=TRUE,edge.labels=TRUE,edge.label.cex=.6, asize=.1,graph='concentration')
+

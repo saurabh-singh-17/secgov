@@ -1,0 +1,135 @@
+#===========================Project Header=============================
+#Process Name: Category
+#Description:  categorises all variables based on the type
+#Return type: variable categorization value csv
+# Author : 
+# date : 06- August 2012
+#Version : Version1
+#revised by: saurabh vikash singh
+#=======================================================================
+
+# writing a function to recognise  a date format
+dateformat<-function(date){
+  form<-"unknown"
+  temp<-as.character(date[1])
+  if(any(grepl("[[:alpha:]]",date) == "TRUE"))
+  {
+    return("unknown")
+  }
+  if(grepl(" ",temp)){
+    date<-apply(as.data.frame(date),1,function(x){strsplit(as.character(x)," ")[[1]][1]})
+  }
+  date<-as.character(date)
+  if (is.null(date))
+    return("unknown")  
+  if(is.na(mean(as.numeric(date),na.rm=T)) == "FALSE")
+  {
+    return("unknown")
+  }
+  if((length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("/","",date,fixed=T))) == FALSE)))   &
+       (length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == TRUE)) > length(which(is.na(as.numeric(gsub("-","",date,fixed=T))) == FALSE))))
+    return("unknown")
+  if (all(is.na(date))) 
+    return(NA)
+  val<-length(date)
+  if(val > 100){val= 100}
+  date[which(date=='')] <- NA
+  if(!is.na(as.numeric(substr(date[1],1,4)))){
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],5,5)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[3,]))),na.rm=T)
+    if(max1 > 12 & max2 <= 12){form<-paste("%Y",split,"%d",split,"%m",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%Y",split,"%m",split,"%d",sep="")}
+  }else{
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],6-(10-nchar(date[1])),6-(10-nchar(date[1])))
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%Y",sep="")}
+  }
+  if(max(nchar(date)) <= 8)
+  {
+    decide<-apply(as.data.frame(date[1:val]),1,function(x){unlist(strsplit(x,"[[:punct:]]"))})
+    split<-substr(date[1],nchar(date[1])-2,nchar(date[1])-2)
+    decide<-as.data.frame(decide)
+    max1<-max(as.numeric(as.character(as.matrix(decide[1,]))),na.rm=T)
+    max2<-max(as.numeric(as.character(as.matrix(decide[2,]))),na.rm=T)
+    if(max1 > 12 && max2 <= 12){form<-paste("%d",split,"%m",split,"%y",sep="")}
+    if(max1 <= 12 & max2 >= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+    if(max1 <= 12 & max2 <= 12){form<-paste("%m",split,"%d",split,"%y",sep="")}
+  }
+  if(nchar(temp[1]) > 10 & nchar(temp[1]) <= 16){form<- paste(form," %H:%M",sep="")}
+  if(nchar(temp[1]) > 16){form<- paste(form," %H:%M:%S",sep="")}
+  return(form)
+}
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Read dataworking from dataworking.RData
+#------------------------------------------------------------------------------
+load(paste(output_path,"/dataworking.RData",sep=""))
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Getting the class of all variables
+# Separating them into numeric, string & date 
+#------------------------------------------------------------------------------
+variableList <- as.character(sapply(dataworking,class))
+variableList <- gsub(pattern="logical",replacement="numeric",x=variableList)
+variableList <- gsub(pattern="integer",replacement="numeric",x=variableList)
+variableList <- gsub(pattern="factor",replacement="string",x=variableList)
+
+stringIndex  <- which(variableList == "string")
+if(length(stringIndex) > 0){
+  tempData   <- dataworking[stringIndex]
+  tempFormat <- as.data.frame(apply(as.matrix(tempData),2,dateformat))
+  dateIndex  <- which(tempFormat != "unknown")
+  variableList[stringIndex[dateIndex]] <- "date"
+}
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Getting the length of all the variable names in the dataset
+#------------------------------------------------------------------------------
+var_len=as.numeric(sapply(names(dataworking),nchar))
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Categorical/Continuous
+#------------------------------------------------------------------------------
+variable_type <- variableList
+variable_type <- gsub(pattern="numeric",replacement="continuous",x=variable_type)
+variable_type <- gsub(pattern="date",replacement="continuous",x=variable_type)
+variable_type <- gsub(pattern="string",replacement="categorical",x=variable_type)
+#------------------------------------------------------------------------------
+variable <- colnames(dataworking)
+distinctvalues <-apply(as.matrix(variable),1,function(x){return(length(unique(dataworking[,x])))})
+
+#------------------------------------------------------------------------------
+# Create variable_categorization.csv
+#------------------------------------------------------------------------------
+variable_categorization <- cbind.data.frame(variable=colnames(dataworking),variable_type,distinctvalues,num_str=variableList,var_len,label="")
+write.csv(variable_categorization,paste(output_path,"/variable_categorization.csv",sep=""),row.names=F,quote=F)
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# The completed.txt file
+#------------------------------------------------------------------------------
+write("variable categorization", file = paste(output_path,"/categorical_gof_completed.txt",sep=""))
+#------------------------------------------------------------------------------

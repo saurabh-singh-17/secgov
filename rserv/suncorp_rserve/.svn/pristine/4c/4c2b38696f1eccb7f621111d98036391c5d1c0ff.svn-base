@@ -1,0 +1,34 @@
+#------------------------------------------------------------------------------------------------------#
+#--                                                                                                  --#   
+#-- Project Name :  projList_update.R-#
+#-- Description  :  generates project csv for the first time and then update it from next time--#
+#-- Return type  :  Generates csvs at given location                                                 --#
+#-- Author       :  Saurabh Singh                                                                    --#                 
+#------------------------------------------------------------------------------------------------------#
+
+csvpath<-paste(input_path,"project.csv",sep="/")
+
+
+if(file.exists(csvpath) == "FALSE")
+{
+  
+  project<-cbind(as.data.frame("1"),as.data.frame(projectName),as.data.frame(userName),as.data.frame(userAccount))
+  colnames(project)[1]<-"projectId"
+
+}else{
+  
+  project<-read.csv(csvpath)
+  if(nrow(project)==0){
+    projectnew<-cbind(as.data.frame(1),as.data.frame(projectName),as.data.frame(userName),as.data.frame(userAccount))
+  }else{
+  projectnew<-cbind(as.data.frame(max(as.numeric(project$projectId))),as.data.frame(projectName),as.data.frame(userName),as.data.frame(userAccount))
+  }
+  colnames(projectnew)[1]<-"projectId"
+  project<-rbind(project,projectnew)
+  
+}
+
+write.csv(project,csvpath,row.names=F,quote=F)
+
+#******************** code completed **************************************************************#
+

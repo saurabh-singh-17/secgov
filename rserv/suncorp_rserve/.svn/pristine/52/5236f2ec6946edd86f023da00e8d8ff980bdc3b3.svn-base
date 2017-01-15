@@ -1,0 +1,337 @@
+#==================================================================================
+# Required Parameters for this code:
+#==================================================================================
+# inputPath        <- "C:/Users/Anvita.srivastava/MRx/r/text20-25-Aug-2014-11-56-04/1"
+# n_grp            <- c(0,1,1,2,2,2)
+# c_grp_flag       <- c("1_1_1","1_1_1","1_2_1","1_1_1","1_2_1","1_3_1")
+# c_var_in         <- "Verbatim"
+# c_operation      <- c("removeEmails","removeUrls","removePhoneNumber",
+#                       "removeOtherNumber","removeSplChars","removeNonEng",
+#                       "removeStopwords","removeDupwords","stripWhitespaces",
+#                       "stemDoc","removeCuswords","replaceCuswords")
+# c_remove         <- c("me","you","want")
+# c_find           <- c("and","this","that")
+# c_replace        <- c("ad","th","tha")
+# n_report_id      <- '3'
+# language_text    <- "spanish"
+#==================================================================================
+
+
+
+# list of stopwords
+englishStopWords    <-c('a','about','above','after','again','against','all','am','an','and','any','are','arent','as','at','be','because','been','before','being','below','between','both','but','by','cant','cannot','could','couldnt','did','didnt','do','does','doesnt','doing','dont','down','during','each','few','for','from','further','had','hadnt','has','hasnt','have','havent','having','he','hed','hell','hes',
+                        'her','here','heres','hers','herself','him','himself','his','how','hows','i','id','ill','im','ive','if','in','into','is','isnt','it','its','its','itself','lets','me','more','most','mustnt','my','myself','no','nor','not','of','off','on','once','only','or','other','ought','our','ours','ourselves','out','over','own','same','shant','she','shed','shell','shes','should','shouldnt','so','some',
+                        'such','than','that','thats','the','their','theirs','them','themselves','then','there','theres','these','they','theyd','theyll','theyre','theyve','this','those','through','to','too','under','until','up','very','was','wasnt','we','wed','well','were','weve','were','werent','what','whats','when','whens','where','wheres','which','while','who','whos','whom','why','whys','with','wont','would',
+                        'wouldnt','you','youd','youll','youre','youve','your','yours','yourself','yourselves',encoding="UTF-8")
+
+
+germanStopWords     <-c('aber','als','am','an','auch','auf','aus','bei','bin','bis','bist','da','dadurch','daher','darum','das','da?','dass','dein','deine','dem','den','der','des','dessen','deshalb','die','dies','dieser','dieses','doch','dort','du','durch','ein','eine','einem','einen','einer','eines','er','es','euer','eure','f?r','hatte','hatten','hattest','hattet','hier','hinter','ich','ihr','ihre','im',
+                        'in','ist','ja','jede','jedem','jeden','jeder','jedes','jener','jenes','jetzt','kann','kannst','k?nnen','k?nnt','machen','mein','meine','mit','mu?','mu?t','musst','m?ssen','m??t','nach','nachdem','nein','nicht','nun','oder','seid','sein','seine','sich','sie','sind','soll','sollen','sollst','sollt','sonst','soweit','sowie','und','unser','unsere','unter','vom','von','vor','wann','warum',
+                        'was','weiter','weitere','wenn','wer','werde','werden','werdet','weshalb','wie','wieder','wieso','wir','wird','wirst','wo','woher','wohin','zu','zum','zur','?ber',encoding="UTF-8")
+
+
+frenchStopWords     <-c('alors','au','aucuns','aussi','autre','avant','avec','avoir','bon','car','ce','cela','ces','ceux','chaque','ci','comme','comment','dans','des','du','dedans','dehors','depuis','deux','devrait','doit','donc','dos','droite','d?but','elle','elles','en','encore','essai','est','et','eu','fait','faites',
+                        'fois','font','force','haut','hors','ici','il','ils','je','juste','la','le','les','leur','l?','ma','maintenant','mais','mes','mine','moins','mon','mot','m?me','ni','nomm?s','notre','nous','nouveaux','ou','o?','par','parce','parole','pas','personnes','peut','peu','pi?ce','plupart','pour','pourquoi',
+                        'quand','que','quel','quelle','quelles','quels','qui','sa','sans','ses','seulement','si','sien','son','sont','sous','soyez','sujet','sur','ta','tandis','tellement','tels','tes','ton','tous','tout','trop','tr?s','tu','valeur','voie','voient','vont','votre','vous','vu','?a','?taient','?tat','?tions','?t?','?tre',encoding="UTF-8")
+
+portugueseStopWords <-c('?ltimo','?','acerca','agora','algmas','alguns','ali','ambos','antes','apontar','aquela','aquelas','aquele','aqueles','aqui','atr?s','bem','bom','cada','caminho','cima','com','como','comprido','conhecido','corrente','das','debaixo','dentro','desde','desligado','deve','devem','dever?','direita','diz','dizer','dois','dos','e','ela','ele','eles','em','enquanto',
+                        'ent?o','est?','est?o','estado','estar','estar?','este','estes','esteve','estive','estivemos','estiveram','eu','far?','faz','fazer','fazia','fez','fim','foi','fora','horas','iniciar','inicio','ir','ir?','ista','iste','isto','ligado','maioria','maiorias','mais','mas','mesmo','meu','muito','muitos','n?s','n?o','nome','nosso','novo','o','onde','os','ou','outro',
+                        'para','parte','pegar','pelo','pessoas','pode','poder?','podia','por','porque','povo','promeiro','qu?','qual','qualquer','quando','quem','quieto','s?o','saber','sem','ser','seu','somente','t?m','tal','tamb?m','tem','tempo','tenho','tentar','tentaram','tente','tentei','teu','teve','tipo','tive','todos','trabalhar','trabalho','tu','um','uma','umas','uns','usa','usar','valor','veja','ver','verdade','verdadeiro','voc?',encoding="UTF-8")
+
+
+spanishStopWords    <-c('un','una','unas','unos','uno','sobre','todo','tambi?n','tras','otro','alg?n','alguno','alguna','algunos','algunas','ser','es','soy','eres','somos','sois','estoy','esta','estamos','estais','estan','como','en','para','atras','porque','por qu?','estado','estaba','ante','antes','siendo','ambos','pero','por','poder','puede','puedo','podemos','podeis','pueden','fui','fue','fuimos','fueron','hacer','hago','hace',
+                        'hacemos','haceis','hacen','cada','fin','incluso','primero','desde','conseguir','consigo','consigue','consigues','conseguimos','consiguen','ir','voy','va','vamos','vais','van','vaya','gueno','ha','tener','tengo','tiene','tenemos','teneis','tienen','el','la','lo','las','los','su','aqui','mio','tuyo','ellos','ellas','nos','nosotros','vosotros','vosotras','si','dentro','solo','solamente','saber','sabes','sabe','sabemos','sabeis','saben','ultimo','largo','bastante','haces','muchos','aquellos','aquellas','sus','entonces','tiempo','verdad','verdadero',
+                        'verdadera','cierto','ciertos','cierta','ciertas','intentar','intento','intenta','intentas','intentamos','intentais','intentan','dos','bajo','arriba','encima','usar','uso','usas','usa','usamos','usais','usan','emplear','empleo','empleas','emplean','ampleamos','empleais','valor','muy','era','eras','eramos','eran','modo','bien','cual','cuando','donde','mientras','quien'
+                        ,'con','entre','sin','trabajo','trabajar','trabajas','trabaja','trabajamos','trabajais','trabajan','podria','podrias','podriamos','podrian','podriais','yo','aquel',encoding="UTF-8")
+
+
+language_text <- tolower(language_text)
+#==================================================================================
+# loading the required muText and other libraries required
+#================================================================================== 
+library(muPreProcessing)
+library(stringr)
+library(stringi)
+library(tau)
+library(NLP)
+#==================================================================================
+
+tagPOS <- function(corpus, language = "en"){
+  
+  sent_token_annotator  <- Maxent_Sent_Token_Annotator()
+  word_token_annotator  <- Maxent_Word_Token_Annotator()
+  pos_tag_annotator     <- Maxent_POS_Tag_Annotator()
+  
+  corpus.set.to.return  <- NULL 
+  for(i in 1:length(corpus)){
+    corpus.element.annotated <- annotate(corpus[i], 
+                                         list(sent_token_annotator,
+                                              word_token_annotator))
+    
+    
+    
+    pos.tagged <- annotate(corpus[i], pos_tag_annotator, 
+                           corpus.element.annotated)
+    pos.tagged.word <- subset(pos.tagged, type == "word")
+    
+    tags <- sapply(pos.tagged.word$features, `[[`, "POS")
+    
+    
+    sent.tagged <-  paste(apply(cbind(pos.tagged.word$start,pos.tagged.word$end, tags),1,
+                                function(word.terms, sent){return(paste(substr(sent,word.terms[1],word.terms[2]),word.terms[3],sep="/"))},
+                                sent=corpus[i]),collapse=" ")
+    
+    corpus.set.to.return[i] <- sent.tagged
+    
+  }
+  return(corpus.set.to.return)
+}
+
+
+#==================================================================================
+# loading/reading the csv file 
+#================================================================================== 
+load(file=paste(inputPath, "/", "dataworking.RData", sep=""))
+#==================================================================================
+
+
+#==================================================================================
+# Looping for multiple select of Panel levels
+#==================================================================================
+for(j in 1:length(n_grp))
+{
+  n_grp_now  <-  n_grp[j]
+  c_grp_flag_now  <-  c_grp_flag[j]
+  outputPath <- paste(inputPath,n_grp_now,c_grp_flag_now,"text mining","data handling","pre processing",n_report_id,sep="/")
+  
+  #==================================================================================
+  # subsetting the data based on the panel-level selected
+  #================================================================================== 
+  if(n_grp_now) 
+  {
+    index<-which(names(dataworking)==paste("grp",n_grp_now,"_flag",sep=""))
+    data<-subset(dataworking,dataworking[index]==c_grp_flag_now)
+    
+  }else {
+    data <- dataworking
+  }
+  
+  if(nrow(data) != 0)
+  {
+    data   <- subset(x=data,select=c("primary_key_1644",c_var_in))
+    missblank_ind<-grep("^\\s+$",x = data[,c_var_in])
+    if(length(missblank_ind)>0){
+      data_missing<-data[missblank_ind,]
+      data<-data[-missblank_ind,]
+    }
+    #==================================================================================
+    
+    #==================================================================================
+    # data cleaning
+    #==================================================================================
+    
+    #changing the encoding of data for further processing
+    index_true<-which(is.locale(as.character(data[,c_var_in])) == "FALSE")
+    if(length(index_true))
+    {
+      data[index_true,c_var_in]<-iconv(as.character(data[index_true,c_var_in]),from="latin1" ,to = "UTF-8")
+      data[index_true,c_var_in]<-iconv(as.character(data[index_true,c_var_in]), "UTF-8", "ASCII", sub="byte")
+    }
+    
+    temp  <-  data[c_var_in]
+    
+    for(i in 1:length(c_operation))
+    {  
+      c_operation_now  <-  c_operation[i]
+      
+      #================================================================================   
+      # stem doc
+      #================================================================================   
+      if(c_operation_now == "stemDoc")
+      {
+        tempCorpus <- Corpus(VectorSource(temp))
+        tempCorpus <- tm_map(tempCorpus, stemDocument, language = language_text)
+        tempCorpus <-unlist(tempCorpus)
+        temp       <-cbind(tempCorpus)
+        colnames(temp)       <-  paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,temp)
+      }  
+      #================================================================================   
+      #remove Internet links
+      if (c_operation_now == "removeUrls")
+      {
+        temp                 <- apply(temp,2,removeURL)
+        colnames(temp)       <- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,temp)
+      }
+      
+      # remove non english characters
+      if (c_operation_now=="removeNonEng")
+      {
+        temp                 <- apply(temp,2,removeNonAlphabetChars)
+        colnames(temp)       <- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,temp)
+      }
+      
+      # remove email id
+      if(c_operation_now=="removeEmails")
+      {
+        temp                 <- apply(temp,2,removeEmailIds)
+        colnames(temp)       <- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,temp)
+      }
+      
+      #remove numbers
+      if(c_operation_now=="removeOtherNumber")
+      {
+        temp                 <- apply(temp,2,removeDigits)
+        colnames(temp)       <- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,temp)
+      }
+      
+      # remove phone number
+      removePhoneNumbers<- function (text) 
+      {
+        text = gsub("\\+?(\\d{3,5})([- ]|[:space:])?\\(?(\\d{2,5})\\)?[- ]?(\\d{2,5})?[- ]?(\\d{2,5})?", 
+                    "", text)
+        return(text)
+      }
+      if(c_operation_now=="removePhoneNumber")
+      {
+        temp                 <- apply(temp,2,removePhoneNumbers)
+        colnames(temp)       <- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,temp)
+      }
+      
+      #remove special/punctuation char
+      if(c_operation_now=="removeSplChars") 
+      {
+        temp                 <- apply(temp,2,removePunctuations)
+        colnames(temp)       <- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,temp)
+      }
+      
+      #strip white spaces
+      if(c_operation_now=="stripWhitespaces")
+      {
+        temp                 <- apply(temp,2,compressWhiteSpaces)
+        colnames(temp)       <- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,temp)
+      }
+      
+      #remove stopword
+      if(c_operation_now=="removeStopwords")
+      {
+        temp               <- apply(data.frame(tolower(temp[,1])),2,removeContent, eval(parse(text=paste(language_text,"StopWords",sep=""))))
+        colnames(temp)       <- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,temp)
+        
+      }
+      
+      #remove duplicate word
+      if(c_operation_now=="removeDupwords")
+      { 
+        temp                 <-  apply(X=temp, MARGIN=c(1,2), FUN=function(x){paste(unique
+                                                                                    (unlist(strsplit(x=x, split=" "))), collapse=" ")})
+        colnames(temp)       <-  paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <-  cbind.data.frame(data,temp)
+      }
+      
+      #remove custom words
+      if(c_operation_now=="removeCuswords")
+      { 
+        
+        temp                 <- apply(data.frame(tolower(temp[,1])),2,removeContent, tolower(c_remove))
+        colnames(temp)       <- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,temp)
+      }
+      #replace custom words
+      if(c_operation_now=="replaceCuswords")
+      {
+        temp                 <- apply(temp,c(1,2),function(temp){ replaceContent(tolower(temp),
+                                                                                 tolower(c_find),tolower(c_replace))})
+        colnames(temp)       <- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,temp) 
+      }
+      
+      #================================================================================ 
+      # Data Extraction code
+      # extract Noun
+      #================================================================================   
+      if (c_operation_now == "extractNoun")
+      {
+        extractNN            <- apply(data[c_var_in],2,function(x) extractPOS(x,"NN"))
+        colnames(extractNN)  <- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,extractNN)
+      }
+      
+      # extract Verb
+      if (c_operation_now == "extractVerb")
+      {
+        extractVB            <- apply(data[c_var_in],2,function(x) extractPOS(x,"VB"))
+        colnames(extractVB)  <- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,extractVB)
+      }
+      
+      # extract Adjective
+      if (c_operation_now == "extractAdj")
+      {
+        extractJJ            <- apply(data[c_var_in],2,function(x) extractPOS(x,"JJ"))
+        colnames(extractJJ)  <- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,extractJJ)
+      }
+      
+      #extract Phone Numbers
+      if (c_operation_now == "extractPhoneNumber")
+      {
+        extractPhn           <- apply(data[c_var_in],2,function(x) str_extract_all(x,pattern="\\+?(\\d{1,5})([- ])\\(?(\\d{2,5})\\)?[- ]?(\\d{2,5})?[- ]?(\\d{2,5})?"))
+        extractPhn           <- as.data.frame(unlist(lapply(X=extractPhn[1][[1]],function(x) paste(x,collapse=" "))))
+        colnames(extractPhn) <- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,extractPhn)
+      }
+      
+      # extract Hash Tag
+      if (c_operation_now == "extractHashTag")
+      {
+        extractHash          <- apply(data[c_var_in],2,function(x) extractHashtags(text=x))
+        extractHash          <- as.data.frame(unlist(lapply(X=extractHash[[1]],function(x) paste(gsub(","," ",x)))))
+        colnames(extractHash)<- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,extractHash)
+      }
+      
+      # extract username
+      if (c_operation_now == "extractUserName") 
+      {
+        extractUser          <- apply(data[c_var_in],2,function(x) str_extract_all(x,"@([A-Za-z0-9_]+)(-|:)?\\s?"))
+        extractUser          <- as.data.frame(unlist(lapply(X=extractUser[1][[1]],function(x) paste(x,collapse=" "))))
+        extractUser          <- apply(X=extractUser[1],2,function(x) gsub(pattern="[@|;:-]",replacement="",x))
+        colnames(extractUser)<- paste(c_var_in,"_",c_operation_now,sep="")
+        data                 <- cbind.data.frame(data,extractUser)
+      }
+      
+      if(length(missblank_ind)>0){
+        data_missing[,paste(c_var_in,"_",c_operation_now,sep="")]=""
+      }
+      
+    }
+    if(length(missblank_ind)>0){
+      data<-as.data.frame(rbind(data,data_missing))
+      data <- data[order(as.numeric(row.names(data))),]
+    }
+    #==================================================================================
+    write.csv(data, paste(outputPath, "/preProcessing.csv", sep=""),
+              row.names=F, quote=F)
+    
+    #==================================================================================
+    # completed txt
+    #==================================================================================
+    write("Pre Processing Completed", file=paste(outputPath, "/","PREPROCESSING_COMPLETED.txt", sep=""))
+    #==================================================================================
+  }
+  else
+  {
+    c_error         <- paste(outputPath,"/error.txt",sep="")
+    write("There are no observations in the subsetted data."
+          , file=c_error)
+  }
+}

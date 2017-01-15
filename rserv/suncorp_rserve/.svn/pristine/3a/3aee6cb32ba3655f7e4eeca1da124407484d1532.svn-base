@@ -1,0 +1,48 @@
+#R-Code
+
+# input_data=paste(input_path,"/","dataworking.csv",sep="")
+load(paste(input_path,"/","dataworking.Rdata",sep=""))
+in.data = dataworking
+# in.data <- read.table(input_data, sep=",", header = TRUE)      #import data from input file
+
+setwd(output_path)  #define work library
+
+#create dataworking
+for (i in 1:nrow(in.data))
+{
+  in.data[i,"primary_key_1644"] = i
+}
+write.csv(in.data, file = paste(output_path, "dataworking.csv", sep="/"), quote=FALSE, row.names=FALSE)
+
+save(in.data, file = paste(output_path, "dataworking.csv", sep="/"))
+
+col.names <- as.data.frame(colnames(in.data))     #create dataframe listing all colnames
+colnames(col.names) <- "variable"
+
+
+var.class <- NULL
+for(i in 1:ncol(in.data))
+{
+  var.class$variable[i] <- colnames(in.data[i])
+
+  if (class(in.data[,i]) == "integer" | class(in.data[,i]) == "numeric")
+  {
+    var.class$variable_type[i] <- "continuous"
+    var.class$num_str[i] <- "numeric"
+  }
+  else if (class(in.data[,i]) == "factor")
+  {
+    var.class$variable_type[i] <- "categorical"
+    var.class$num_str[i] <- "string"
+  }
+  
+  var.class$distinctvalues <- 0
+}
+
+var.class <- as.data.frame(var.class)
+
+#create CSV
+write.csv(var.class, file = paste(output_path, "categorical.csv", sep="/"), quote=FALSE, row.names=FALSE)
+
+#completed.text
+write("VARIABLE_CATEGORIZATION_COMPLETED", file = paste(output_path, "VARIABLE_CATEGORIZATION_COMPLETED.TXT", sep="/"))

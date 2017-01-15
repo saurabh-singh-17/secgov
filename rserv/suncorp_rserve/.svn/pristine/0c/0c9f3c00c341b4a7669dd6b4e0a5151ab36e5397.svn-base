@@ -1,0 +1,149 @@
+#---------------------------------------------------------------------------------------#
+#--                                                                                   --#
+#--  Project Name:   Text Mining                                                      --#
+#--  Task :          Task 1: Part of Speech Tagging                 		      	  --#
+#--  Sub-Task:       1.1 Appending the pos-tagged data to the original file           --#
+#--  version :       1.0 date: 14/03/2012 author: Gaurav Jain		          		  --#
+#---------------------------------------------------------------------------------------#
+
+# Defining some custom functions
+# 1. To install required packages
+
+#---------------------------------------------------------------------------------------
+
+is.installed <- function(pkg){ is.element(pkg, installed.packages()[,1])}
+
+
+posTagger <- function(filePath, fileName, varName,
+                      extractVerbs = TRUE,
+                      extractNouns = TRUE,
+                      extractAdjectives = TRUE) {
+
+
+if(!is.installed('RTextTools')){
+  install.packages('RTextTools',repo="http://lib.stat.cmu.edu/R/CRAN")
+  library('RTextTools')
+}
+if(!is.installed('openNLP')){
+  install.packages('openNLP',repo="http://lib.stat.cmu.edu/R/CRAN")
+  library('openNLP')
+}
+if(!is.installed('openNLPmodels.en')){
+  install.packages('openNLPmodels.en',repo="http://lib.stat.cmu.edu/R/CRAN")
+  library('openNLPmodels.en')
+}
+
+  require('RTextTools')
+  require('openNLP')
+  require('openNLPmodels.en')
+
+  # To read data from a single csv file and create a dataset of required column
+  #----------------------------------------------------------------------------
+
+  fileLoc <- paste(filePath,fileName,sep="\\")
+
+  tmDataSet <- read_data(fileLoc,type="csv")
+  dataSize <- nrow(tmDataSet)
+
+  varIndex <- which(colnames(tmDataSet)==varName)
+
+  dataList <- as.vector(tmDataSet[,varIndex])
+
+  # To remove punctuations from dataset
+  #----------------------------------------------------------------------------
+
+  dataList <- removePunctuation(dataList, preserve_intra_word_dashes = FALSE)
+
+  # POS-tag the dataset
+  #----------------------------------------------------------------------------
+
+  dataList <- tagPOS(dataList, language = "en")
+
+  nounList = c()
+  verbList = c()
+  adjList = c()
+
+  # Extracting nouns, verbs and adjectives from the tagged data
+  #----------------------------------------------------------------------------
+
+  for(i in 1:length(dataList)) {
+
+    wordlist <- unlist(strsplit(dataList[i], " ", fixed=TRUE))
+    splitVars <- sapply(wordlist, function(str){strsplit(str, "/", fixed=TRUE)},
+                        simplify = TRUE, USE.NAMES = FALSE)
+
+    splitMat <- as.data.frame(t(data.frame(splitVars)))
+
+    words = as.character(splitMat$V1)
+    postags = as.vector(splitMat$V2)
+
+    noun = ""
+    verb = ""
+    adj = ""
+
+    for(j in 1:length(words)) {
+
+      tag2 = substr(postags[j],1,2)
+	if(length(tag2)==0){
+	print(tag2)
+	
+	}
+	else{
+
+      if(tag2 == 'NN') {
+        noun = paste(noun,words[j],sep=" ")
+      }
+
+      if(tag2 == 'VB') {
+        verb = paste(verb,words[j],sep=" ")
+      }
+
+      if(tag2 == 'JJ') {
+        adj = paste(adj,words[j],sep=" ")
+      }
+
+		}
+}
+
+    nounList = c(nounList,noun)
+    verbList = c(verbList,verb)
+    adjList = c(adjList,adj)
+
+  }
+
+  verbList = tolower(verbList)
+  nounList = tolower(nounList)
+  adjList = tolower(adjList)
+
+  tmDataSetNew <- cbind(tmDataSet)
+
+  # Adding POS entity data to the original dataset
+  #----------------------------------------------------------------------------
+
+  if(extractVerbs) {
+    tmDataSetNew <- cbind(tmDataSetNew,verbList)
+  }
+
+  if(extractNouns) {
+    tmDataSetNew <- cbind(tmDataSetNew,nounList)
+  }
+
+  if(extractAdjectives) {
+    tmDataSetNew <- cbind(tmDataSetNew,adjList)
+  }
+
+  # To write the new dataset to the original csv file
+  #----------------------------------------------------------------------------
+
+  write.csv(tmDataSetNew, file = fileLoc, append = FALSE, col.names = TRUE,
+            row.names = FALSE)
+
+  # To clear all variable used
+  #----------------------------------------------------------------------------
+
+  rm(list=c("filePath","fileName","fileLoc", "varName", "tmDataSet",
+            "tmDataSetNew", "dataSize", "dataList", "nounList", "verbList",
+            "adjList", "noun", "verb", "adj", "i", "j", "postags", "splitVars",
+            "tag2", "varIndex", "wordlist", "words", "splitMat"))
+
+}

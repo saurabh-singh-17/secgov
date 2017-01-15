@@ -1,0 +1,141 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Oct 24 15:03:45 2014
+
+@author: vh
+"""
+
+from config import *
+import cPickle as pickle
+from collections import defaultdict, Counter
+from Resources import RESKEY_NEGATORS
+#from InterrogativeAnalysis import questionsInText
+from appDefs import *
+
+TLP_V_ENDS_ING = 'ING'
+TLP_V_ENDS_ED = 'ED'
+
+VOWELS = set(['a','o','e','u','i'])
+
+_NPA_NOUNTAGS = set(['D', '^', 'S', 'Z', 'L', 'O'])
+_NPA_NTAG = set(['N'])
+_IGNORE_ = set(['gcas'])
+
+
+
+def stemNoun(chunk):
+    toks = chunk.tokens
+    #tags = chunk.tags
+    for k,tok in enumerate(toks):
+        tag = chunk.tags[k]
+        if tag in _NPA_NTAG:
+            '''
+            ignore list not to be stemmed
+            '''
+            if tok in _IGNORE_:
+                return(tok)
+            '''
+            berries->berry
+            '''
+            if tok.endswith('ies'):
+                return(tok[:len(tok)-3]+"y")
+            '''
+            knives->knife
+            '''
+            if (tok.endswith('ves')):
+                return(tok[:len(tok)-3]+"fe")
+            '''
+            match->matches
+            box->boxes
+            '''
+            if (not tok.endswith('ss')) and (tok.endswith('es')):
+                if (tok[len(tok)-4]=='c' and tok[len(tok)-3]=='h') or (tok[len(tok)-3]=='s' and tok[len(tok)-4]=='s') or (tok[len(tok)-4]=='s' and tok[len(tok)-3]=='h' ) or tok[len(tok)-3]=='x' or tok[len(tok)-3]=='z':
+                    return(tok[:len(tok)-2])
+            if tok.endswith('ii'):
+                return(tok[:len(tok)-2]+"us")
+            '''file->files'''
+            if (not tok.endswith('ss')) and (tok.endswith('s')):
+                return(tok[:len(tok)-1])
+        return(tok)
+
+def stemNounToks(tok):
+    #toks = chunk.tokens
+    #tags = chunk.tags
+    #for k,tok in enumerate(toks):
+        #tag = chunk.tags[k]
+        #if tag in _NPA_NTAG:
+    '''
+    ignore list not to be stemmed
+    '''
+    if tok in _IGNORE_:
+        return(tok)
+    '''
+    berries->berry
+    '''
+    if tok.endswith('ies'):
+        return(tok[:len(tok)-3]+"y")
+    '''
+    knives->knife
+    '''
+    if (tok.endswith('ves')):
+        return(tok[:len(tok)-3]+"fe")
+    '''
+    match->matches
+    box->boxes
+    '''
+    if (not tok.endswith('ss')) and (tok.endswith('es')):
+        if (tok[len(tok)-4]=='c' and tok[len(tok)-3]=='h') or (tok[len(tok)-3]=='s' and tok[len(tok)-4]=='s') or (tok[len(tok)-4]=='s' and tok[len(tok)-3]=='h' ) or tok[len(tok)-3]=='x' or tok[len(tok)-3]=='z':
+            return(tok[:len(tok)-2])
+    if tok.endswith('ii'):
+        return(tok[:len(tok)-2]+"us")
+    '''file->files'''
+    if (not tok.endswith('ss')) and (tok.endswith('s')):
+        return(tok[:len(tok)-1])
+    
+    return(tok)
+        
+if __name__ == "__main__":
+
+    #proctxtLst = pickle.load(open(MC_DATA_HOME + 'evaldata/data_merged_2854_test.proctxts'))
+    proctxtLst = pickle.load(open(MC_DATA_HOME + 'entityEval.proctxts'))
+    f= open('stemmed.txt','w')
+    #proctxtLst = pickle.load(open(MC_DATA_HOME + 'evaldata/data_semeval_6399_train.proctxts'))
+    hr = pickle.load(open(DEFAULT_HR_FILE))
+    for p, proctxt in enumerate(proctxtLst):
+        for s, sentence in enumerate(proctxt[PTKEY_CHUNKEDCLAUSES]):
+            for c, clause in enumerate(sentence):
+                for h, chunk in enumerate(clause):
+                    stemmed = stemNoun(chunk)
+                    f.write(stemmed+"\n")
+    f.close()
+ 
+
+# def stem(chunk):
+#     toks = chunk.tokens
+#     tags = chunk.tags
+#     for k,tok in enumerate(toks): #(chunk.tokens):
+#         tag = chunk.tags[k]
+#         flag=0
+#         if tag == "V" and tok.endswith('ing') and tok[len(tok)-4] not in VOWELS:
+#             if tok[len(tok)-4] == tok[len(tok)-5]:
+#                 return(tok+"|"+tok[:len(tok)-4]+"|"+"VERBS_ING_1") 
+#             return(tok+"|"+tok[:len(tok)-3]+"|"+"VERBS_ING_2")
+#         if tag == "V" and tok.endswith('ed') and tok[len(tok)-3] not in VOWELS:
+#             return(tok+"|"+tok[:len(tok)-2]+"|"+"VERBS_ED")
+#         if tag == "V" and tok.endswith('ied'):
+#             return(tok+"|"+tok[:len(tok)-3]+"y"+"|"+"VERBS_IED")
+#         if tag in _NPA_NTAG:
+#             if (not tok.endswith('ss')) and (tok.endswith('ies')):
+#                 return(tok+"|"+tok[:len(tok)-3]+"y"+"|"+"NOUN")
+#             if (not tok.endswith('ss')) and (tok.endswith('es')):
+#                 if tok[len(tok)-3]!='v' and tok[len(tok)-3]!='u' and tok[len(tok)-3]!='c' and tok[len(tok)-3]!='l' and tok[len(tok)-3]!='n' and tok[len(tok)-3]!='e':
+#                     return(tok+"|"+tok[:len(tok)-2]+"|"+"NOUN")
+#                     flag=1
+#             if (not tok.endswith('ss')) and (tok.endswith('s')) and (not flag):
+#                 return(tok+"|"+tok[:len(tok)-1]+"|"+"NOUN")
+#         return(tok+"|"+tok+"|"+tag)
+            
+
+
+
+                   

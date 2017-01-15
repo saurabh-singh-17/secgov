@@ -1,0 +1,300 @@
+source(paste(rcodePath, "/common/functions.R", sep=""))
+#------------------------------------------------------------------------------------------------------#
+#--                                                                                                  --#   
+#-- Project Name :  MRx_Roll_Ups_1.0                                                                 --#
+#-- Description  :  Contains some functions to enable Roll Ups in MRx                                --#
+#-- Return type  :  Generates new datasets and out csvs at given location                            --#
+#-- Author       :  Shankar Kumar Jha and saurabh vikash singh                                                             --#                 
+#------------------------------------------------------------------------------------------------------#
+
+
+#Parameters required
+#-----------------------------------------------------------------
+#input_path <- 'D:/'
+#output_path <- 'D:/'
+#group_var_cat <- c('geography')
+# group_var_date <- c('Date')
+# agg_var_Cont <- c('ACV','Store_Format')
+#agg_var_cat <- c('Store_Format','Store_Format','Store_Format','Store_Format','Store_Format')
+#metrics <- c('SUM','COUNT','COUNT','COUNT','COUNT','COUNT','COUNT')
+#newvarlist <- c('ACV_','Store_Format','Store_Format_Food/Drug Combo','Store_Format_Super Combo','Store_Format_Supercenter','Store_Format_Supermarket','Store_Format_Superstore')
+#date_Fun <- c('month')
+#agg_var_cat_level <- c('Food/Drug Combo','Super Combo','Supercenter','Supermarket','Superstore')
+#all <- c('geography','Date','ACV','Store_Format','Store_Format','Store_Format','Store_Format','Store_Format')
+#new_Dataset_name  <- 'R'
+#non_vars <- c()
+
+
+
+if (file.exists(paste(output_path,"/error.txt",sep=""))){
+  file.remove(paste(output_path,"/error.txt",sep=""))
+}
+
+
+#Libraries required
+#---------
+#library(reshape2)
+library(chron)
+
+#Reading the dataworking.csv  
+#-----------------------------------------------------------------
+#dataworking=read.csv(paste(input_path,"/dataworking.csv",sep=""),header=T)
+load(paste(input_path,"/dataworking.RData",sep=""))
+data=dataworking
+
+error_var_final <- NULL
+n_obs_dataworking <- nrow(dataworking)
+
+for (i in 1:length(all)) {
+  n_index <- dataworking[, all[i]] %in% ""
+  x_temp  <- is.na(dataworking[,all[i]])
+  n_index <- which(n_index | x_temp)
+  n_invalid_obs <- length(n_index)
+  
+  if (n_invalid_obs == n_obs_dataworking) {
+    error_var_final <- c(error_var_final, all[i])
+  }
+}
+
+if (length(error_var_final)){
+  error_text <- paste("The variable(s) ", 
+                      paste(error_var_final,
+                            collapse= ", "),
+                      " have all values missing and hence rollup cannot be performed.",
+                      sep="")
+  write(error_text, paste(output_path,"/error.txt",sep=""))
+  stop(error_text)
+}
+
+
+
+#-------------------------------------------------------------------------------
+# some change for job automation
+#-------------------------------------------------------------------------------
+if ("!" %in% agg_var_cat_level) {
+  x_temp                         <- agg_var_cat_level == "!"
+  agg_var_cat_level[x_temp]      <- ""
+  if (length(newvarlist) <= 1) {
+    if (newvarlist == "") {
+      newvarlist                 <- paste(agg_var_cat,
+                                          agg_var_cat_level,
+                                          sep="_")
+    }
+  }
+  agg_var_cat_level              <- agg_var_cat_level[!x_temp]
+  agg_var_cat                    <- agg_var_cat[!x_temp]
+}
+
+if (length(non_vars_new) == 0 && length(non_vars) > 0) {
+  non_vars_new                   <- paste(non_vars,
+                                          "_",
+                                          sep="")
+}
+#-------------------------------------------------------------------------------
+
+
+
+uni_agg_var_cat<-unique(agg_var_cat)
+agg_var_cat_level1<- substring(agg_var_cat_level,2,nchar(agg_var_cat_level))
+agg_var_cat_level1<- as.numeric(agg_var_cat_level1)
+index_1<-which(!is.na(agg_var_cat_level1) & grepl("_",substring(agg_var_cat_level,1,1)))
+agg_var_cat_level[index_1]<-agg_var_cat_level1[index_1]
+
+functionpercent<-function(x){percent = (length(x))
+                             return(percent)}
+
+functionunique<- function(x){unique1 <- length(unique(x))
+                             return(unique1)}
+metrics=gsub("PERCENT","functionpercent" ,metrics)
+metrics=gsub("UNICOUNT","functionunique" ,metrics)
+metrics=gsub("COUNT","length" ,metrics)
+metrics=gsub("AVG","mean" ,metrics)
+
+
+
+#-- #~!@#4355,NEW,DH,rollup,04Feb2013,1201#
+week_of_month=function(aDate){
+  a=as.POSIXlt(aDate)$year + 1900 # gets year out of date
+  b=as.character(substr(aDate,6,7))
+  c=as.Date(paste(b,"/","01/",a,sep=""),format="%m/%d/%Y")# first date of month gets created
+  lag=with( month.day.year(c), day.of.week(month,day,year) )
+  w=as.integer((as.numeric(aDate) - as.numeric(c) + (lag-1))/7)+1 # equation for week no.
+  return(w)
+}
+#-- #~!@#4355,NEW,DH,rollup,04Feb2013,1201#
+
+#One function definations to enable Roll ups in MRx 
+#-----------------------------------------------------------------
+
+aggregationFunction=function(agg_var_Cont,agg_var_cat,metrics,agg_var_cat_level,group_var_cat){
+  
+  if(length(date_Fun)){
+    
+    dateCols=NULL
+    colnam=NULL
+    for(i in 1:length(date_Fun)){
+      if(date_Fun=="month"){
+        col=months(dataworking[, group_var_date[i]])
+      }
+      #-- #~!@#4355,NEW,DH,rollup,04Feb2013,1146#
+      if(date_Fun=="week_month"){
+        col=week_of_month(dataworking[,group_var_date[i]])
+      }
+      if(date_Fun=="week"){
+        col=format(dataworking[,group_var_date[i]],format="%W")
+      }
+      #-- #~!@#4355,NEW,DH,rollup,04Feb2013,1146#
+      if(date_Fun=="qtr"){
+        col=quarters(dataworking[,group_var_date[i]])
+      }
+      if(date_Fun=="year"){
+        col=format(dataworking[,group_var_date[i]],"%Y")
+      }
+      colnam=c(colnam=paste(group_var_date[i],date_Fun[i],i,sep="_"))
+      dateCols=cbind(dateCols,col)
+    }
+    
+    group_var_cat=c(group_var_cat,colnam)
+    dataworking=cbind.data.frame(dataworking,factor(dateCols))
+    colnames(dataworking)[((ncol(dataworking)-length(date_Fun))+1):ncol(dataworking)]<-colnam
+  }
+  result.2=NULL
+  result.1=NULL
+  i=0
+  if(length(agg_var_Cont) >0){
+    
+    for (i in 1:length(agg_var_Cont)) {
+      if ((class(dataworking[, agg_var_Cont[i]]) == "character") | 
+            (class(dataworking[, agg_var_Cont[i]]) == "factor")) {
+        if (tolower(metrics[i]) == "length" |
+              tolower(metrics[i]) == "functionpercent" |
+              tolower(metrics[i]) == "functionunique") {
+          result.1 = cbind(result.1,
+                           as.matrix(aggregate(as.matrix(dataworking[agg_var_Cont][i]), 
+                                               dataworking[group_var_cat], FUN = tolower(metrics[i]))))
+        } else {
+          result.1 = cbind(result.1,
+                           as.matrix(aggregate(as.matrix(dataworking[agg_var_Cont][i]), 
+                                               dataworking[group_var_cat], FUN = tolower(metrics[i]), 
+                                               na.rm = TRUE)))
+        }
+        
+      } else {
+        if (tolower(metrics[i]) == "length" |
+              tolower(metrics[i]) == "functionpercent" |
+              tolower(metrics[i]) == "functionunique") {
+          result.1 = cbind(result.1,
+                           as.matrix(aggregate(as.numeric(as.matrix(dataworking[agg_var_Cont][i])), 
+                                               dataworking[group_var_cat], FUN = tolower(metrics[i]))))
+        } else {
+          result.1 = cbind(result.1,
+                           as.matrix(aggregate(as.numeric(as.matrix(dataworking[agg_var_Cont][i])), 
+                                               dataworking[group_var_cat], FUN = tolower(metrics[i]), 
+                                               na.rm = TRUE)))
+        }
+        
+      }
+    }
+    
+    result.1<-as.data.frame(result.1)
+    #try(result.1<-result.1[,-c(seq(3,(ncol(result.1)-1),2))])
+    name1<-which(colnames(result.1) %in% group_var_cat)
+    name2<-which(colnames(result.1) %in% colnames(result.1))
+    number<-which((name2 %in% name1) == "FALSE")
+    result.1<-result.1[,c(which(colnames(result.1) %in% group_var_cat)[1:length(group_var_cat)],number)]
+    
+    colnames(result.1)<- c(group_var_cat,agg_var_Cont)
+  }
+  j=i
+  
+  if(length(agg_var_cat) > 0){
+    for(i in 1:length(agg_var_cat)){
+      data=subset(dataworking[c(agg_var_cat[i],group_var_cat)],dataworking[agg_var_cat[i]]==agg_var_cat_level[i])
+      ind=which(colnames(data) %in% group_var_cat)
+      mergeD=aggregate(as.matrix(data[agg_var_cat[i]]),data[c(ind)],FUN=tolower(metrics[j+i]))
+      
+      index=ncol(mergeD)	
+      if(metrics[j+i]=="functionpercent")
+      {
+        mergeD[,index]=mergeD[,index]/sum(mergeD[,index], na.rm=TRUE)*100
+      }  
+      
+      rename<- gsub(" ","",agg_var_cat_level[i],fixed=TRUE)
+      rename<-gsub("/","_",rename,fixed=TRUE)
+      colnames(mergeD)[ncol(mergeD)]<-rename
+      if(!is.null(result.2)){
+        result.2=merge(result.2,mergeD,all.x=TRUE,all.y=TRUE,by=group_var_cat)
+      }else{
+        result.2=mergeD
+      }
+    }
+    #result.2=result.2[(length(group_var_cat)+1):ncol(result.2)]
+    #result.2=as.data.frame(result.2)
+  }
+  groupVariables=NULL
+  if(length(agg_var_Cont) == 0 & length(agg_var_cat) == 0){
+    resultDF<- dataworking[c(group_var_cat,non_vars)]
+    colnames(resultDF)[(length(group_var_cat)+1):(length(group_var_cat)+length(non_vars))]<-non_vars_new
+  }else{
+    #groupVariables=unique(dataworking[group_var_cat])
+    if(is.null(result.1))
+    {
+      resultDF=result.2
+    }
+    if(is.null(result.2))
+    {
+      resultDF=as.data.frame(result.1)
+    }
+    if(!is.null(result.1) & !is.null(result.2))
+    {
+      resultDF=merge(as.matrix(result.1),as.matrix(result.2),by=group_var_cat,all.x=TRUE)
+    }
+    colnames(resultDF)[(length(group_var_cat)+1):ncol(resultDF)]<-newvarlist
+    if(length(non_vars)>0)
+    {
+      datawork<- dataworking[c(group_var_cat,non_vars)]
+      resultDF<-merge(as.matrix(datawork),as.matrix(resultDF), by=group_var_cat,all.x=TRUE)
+      colnames(resultDF)[(length(group_var_cat)+1):(length(group_var_cat)+length(non_vars))]<-non_vars_new
+    }
+  }
+  #print(result.1)
+  #print(result.2)
+  #-------------------------------------------------------------------------------
+  #calls the useDateFunction to format date variables into the original format 
+  #------------------------------------------------------------------------------- 
+  resultDF<-useDateFormat(c_path_in=input_path ,x = resultDF)
+  #------------------------------------------------------------------------------- 
+  
+  write.csv(resultDF,paste(output_path,"/",new_Dataset_name,".csv",sep=""),row.names=FALSE)
+  return(resultDF)
+  
+}
+
+resultDF<-aggregationFunction(agg_var_Cont,agg_var_cat,metrics,agg_var_cat_level,group_var_cat)
+
+
+if (nrow(resultDF)==0){
+  error_text<- "The Resultant dataset has zero observations."
+  write(error_text,paste(output_path,"/error.txt",sep=""))
+  stop(error_text)
+}
+#-------------------------------------------------------------------------------
+# some change for job automation
+#-------------------------------------------------------------------------------
+dataset_name                   <- new_Dataset_name
+input_path                     <- output_path
+
+source(ds_prop_code_path)
+#-------------------------------------------------------------------------------
+
+
+
+#writing the completed text at the output location
+#-----------------------------------------------------------------
+write("ROLLUP_COMPLETED", file = paste(output_path, "ROLLUP_COMPLETED.txt", sep="/"))
+
+#Removing all the objects created in the session
+#-----------------------------------------------------------------
+#rm(list = ls())
+
+

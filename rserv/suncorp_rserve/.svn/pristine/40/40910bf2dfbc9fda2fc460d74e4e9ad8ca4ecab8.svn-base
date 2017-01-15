@@ -1,0 +1,187 @@
+#-------------------------------------------------------------------------------
+# info : sample parameters
+#-------------------------------------------------------------------------------
+# output_path                      <- 'D:/Dataset'
+# input_path                       <- 'D:/Dataset'
+# decay_var                        <- c('sales','Total_Selling_Area')
+# decay_value_selected             <- c('123','456')
+# id_var                           <- 'format'
+# namecsv                          <- 'test'
+# date_var                         <- 'Date'
+# calculate_decay_rate             <- 'true'
+# create_dataset                   <- 'false'
+
+c_data_new                       <- namecsv
+c_path_in                        <- input_path
+c_path_out                       <- output_path
+n_val_in_decay                   <- as.numeric(decay_value)
+c_var_in_date                    <- date_var
+c_var_in_decay                   <- NULL
+c_var_in_id                      <- id_var
+l_calculate_decay_rate           <- as.logical(calculate_decay_rate)
+l_create_dataset                 <- as.logical(create_dataset)
+out                              <- NULL
+if (l_calculate_decay_rate) {
+  c_var_in_decay                 <- decay_var1
+}
+if (l_create_dataset) {
+  c_var_in_decay                 <- decay_var2
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# Making the "" parameters NULL
+#-------------------------------------------------------------------------------
+a.all <- ls()
+
+for (c.tempi in a.all) {
+  
+  x_tempi <- eval(parse(text=c.tempi))
+  
+  if (class(x_tempi) != "character") next  
+  if (length(x_tempi) != 1) next
+  if (is.null(x_tempi) | x_tempi != "") next
+  
+  assign(x=c.tempi, value=NULL)
+  print(c.tempi)
+  
+}
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# loading the dataset
+#-------------------------------------------------------------------------------
+load(paste(c_path_in, "/dataworking.RData", sep=""))
+# throw away variables not needed
+dataworking <-subset(x = dataworking, select = c(c_var_in_date,
+                                                 c_var_in_decay,
+                                                 c_var_in_id))
+#-------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------
+# workflow
+#-------------------------------------------------------------------------------
+if (l_calculate_decay_rate) {
+  #-----------------------------------------------------------------------------
+  # sort the dataset by the date variable
+  #-----------------------------------------------------------------------------
+  x_temp                         <- order(dataworking[, c_var_in_date])
+  dataworking                    <- dataworking[x_temp, , drop=FALSE]
+  #-----------------------------------------------------------------------------
+  
+  #-----------------------------------------------------------------------------
+  # remove the observations where the date variable is missing
+  # recode the date variable from 1:nrow(dataworking)
+  #-----------------------------------------------------------------------------
+  x_temp                         <- is.na(dataworking[, c_var_in_date])
+  if (any(x_temp)) {
+    dataworking                  <- dataworking[!x_temp, , drop=FALSE]
+  }
+  dataworking[, c_var_in_date]   <- 1:nrow(dataworking)
+  #-----------------------------------------------------------------------------
+  
+  #-----------------------------------------------------------------------------
+  # log(cumulative sum(decay variable))
+  #-----------------------------------------------------------------------------
+  for (tempi in 1:length(c_var_in_decay)) {
+    x_temp                               <- is.finite(dataworking[, c_var_in_decay[tempi]])
+    if (any(!x_temp)) {
+      dataworking[!x_temp, c_var_in_decay[tempi]] <- NA
+    }
+    dataworking[, c_var_in_decay[tempi]] <- log(Reduce(f=function(x1, x2) sum(x1, x2, na.rm=TRUE),
+                                                       x=as.numeric(dataworking[, c_var_in_decay[tempi]]),
+                                                       accumulate=TRUE))
+    x_temp                               <- is.finite(dataworking[, c_var_in_decay[tempi]])
+    if (any(!x_temp)) {
+      dataworking[!x_temp, c_var_in_decay[tempi]] <- NA
+    }
+  }
+  #-----------------------------------------------------------------------------
+  
+  #-----------------------------------------------------------------------------
+  # build a linear model {date variable ~ log(cumulative sum(decay variable))}
+  #-----------------------------------------------------------------------------
+  for (tempi in 1:length(c_var_in_decay)) {
+    x_temp                       <- paste(c_var_in_date, " ~ ",
+                                          c_var_in_decay[tempi], sep="")
+    x_temp                       <- lm(formula=x_temp, data=dataworking)
+    out                          <- c(out, x_temp$coefficients[[2]])
+  }
+  #-----------------------------------------------------------------------------
+  
+  #-----------------------------------------------------------------------------
+  # output : decay values
+  #-----------------------------------------------------------------------------
+  df_decay_value                 <- data.frame(c_var_in_decay,
+                                               round(x=out,
+                                                     digits=5))
+  colnames(df_decay_value)       <- c("variable", "decay_value")
+  write.csv(df_decay_value,
+            file=paste(c_path_out, "/decay_value.csv", sep=""),
+            row.names=FALSE, quote=FALSE)
+  #-----------------------------------------------------------------------------
+  
+  #-----------------------------------------------------------------------------
+  # completed txt
+  #-----------------------------------------------------------------------------
+  write("dataset_decay",
+        file=paste(c_path_out, "/completed.txt", sep=""))
+  #-----------------------------------------------------------------------------
+} else {
+  #-----------------------------------------------------------------------------
+  # function : count of non missing values
+  #-----------------------------------------------------------------------------
+  countNonMissing                <- function(x) {
+    return(length(which(!is.na(x))))
+  }
+  #-----------------------------------------------------------------------------
+  
+  
+  
+  #-----------------------------------------------------------------------------
+  # format the date variables
+  #-----------------------------------------------------------------------------
+  dataworking <- useDateFormat(c_path_in = c_path_in,
+                               x = dataworking)
+  #-----------------------------------------------------------------------------
+  
+  
+  
+  #-----------------------------------------------------------------------------
+  # rollup by ID variable, find (count of nonmissing values * decay value)
+  #-----------------------------------------------------------------------------
+  x_temp                         <- character(length=nrow(dataworking))
+  x_temp[!is.na(dataworking[, c_var_in_id])] <- dataworking[!is.na(dataworking[, c_var_in_id]),
+                                                            c_var_in_id]
+  x_temp                         <- list(x_temp)
+  names(x_temp)                  <- c_var_in_id
+  df_resultant                   <- aggregate(x=dataworking[c_var_in_decay],
+                                              by=x_temp,
+                                              FUN=countNonMissing)
+  for (tempi in 1:length(c_var_in_decay)) {
+    df_resultant[, c_var_in_decay[tempi]] <- df_resultant[, c_var_in_decay[tempi]] * n_val_in_decay[tempi]
+  }
+  #-----------------------------------------------------------------------------
+  
+  #-----------------------------------------------------------------------------
+  # output : Resultant Dataset
+  #-----------------------------------------------------------------------------
+  write.csv(df_resultant,
+            file=paste(c_path_out, "/", c_data_new, ".csv", sep=""),
+            row.names=FALSE, quote=FALSE)
+  #-----------------------------------------------------------------------------
+  
+  #-----------------------------------------------------------------------------
+  # completed txt
+  #-----------------------------------------------------------------------------
+  write("dataset_decay",
+        file=paste(c_path_out, "/completed.txt", sep=""))
+  #-----------------------------------------------------------------------------
+}
+#-------------------------------------------------------------------------------
